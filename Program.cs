@@ -21,9 +21,12 @@ namespace CSOM_Programming
                     ctx.Load(ctx.Web);
                     await ctx.ExecuteQueryAsync();
 
-                    Console.WriteLine($"Site: {ctx.Web.Title}");
+                    Console.WriteLine($"Connected Site: {ctx.Web.Title}");
 
-                    // Create Term Set and 2 Terms
+                    // Create List CSOM Test
+                    //await CreateList(ctx, "CSOM Test");
+
+                    // Create Term Set And 2 Terms
                     await CreateTermSetAndTerms(ctx);
                 }
 
@@ -74,22 +77,15 @@ namespace CSOM_Programming
             TermStore termStore = taxonomySession.GetDefaultSiteCollectionTermStore();
 
             // Create Group Test
-            Guid newGroupGuid = Guid.NewGuid();
-            TermGroup termGroup = termStore.CreateGroup("Test", newGroupGuid);
+            TermGroup termGroup = termStore.CreateGroup("Test", Guid.NewGuid());
 
             // Create Term Set
-            Guid newTermSetGuid = Guid.NewGuid();
-            int lcid = 1316;
-            TermSet termSet = termGroup.CreateTermSet("city-PhamMinhThuan", newTermSetGuid, lcid);
+            TermSet termSet = termGroup.CreateTermSet("city-PhamMinhThuan", Guid.NewGuid(), 1316);
 
             // Create 2 Terms
-            Guid firstTermGuid = Guid.NewGuid();
-            int firstLcid = 1399;
-            termSet.CreateTerm("Ho Chi Minh", firstLcid, firstTermGuid);
+            termSet.CreateTerm("Ho Chi Minh", 1399, Guid.NewGuid());
 
-            Guid secondTermGuid = Guid.NewGuid();
-            int secondLcid = 1699;
-            termSet.CreateTerm("Stockholm", secondLcid, secondTermGuid);
+            termSet.CreateTerm("Stockholm", 1699, Guid.NewGuid());
 
             await ctx.ExecuteQueryAsync();
         }

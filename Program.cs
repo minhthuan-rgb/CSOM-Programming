@@ -38,9 +38,6 @@ namespace CSOM_Programming
                     //await CreateTextField(ctx, "about");
                     //await CreateTaxonomyField(ctx, "city");
 
-                    // Bind Taxonomy Field To Term Set
-                    //await BindTaxonomyFieldToTermSet(ctx);
-
                     // Create Content Type "CSOM Test content type"
                     //await CreateContentType(ctx, "CSOM Test content type");
 
@@ -53,8 +50,23 @@ namespace CSOM_Programming
                     // Set "CSOM Test content type" As Default Content Type In List "CSOM test"
                     //await SetDefaultContentType(ctx);
 
+                    // Bind Taxonomy Field To Term Set
+                    //await BindTaxonomyFieldToTermSet(ctx);
+
                     // Add 5 Items To List CSOM Test
-                    await AddItemsToList(ctx, 5);
+                    //await AddItemsToList(ctx, 5);
+
+                    // Set Default Value For 'about' site field
+                    //await SetDefaultValueForAboutField(ctx);
+
+                    // Add 2 Items With Default Value Of 'about' site field
+                    //await AddItemsToList(ctx, 2, true);
+
+                    // Set Default Value For 'city' site field
+                    await SetDefaultValueForCityField(ctx);
+
+                    // Add 2 Items With Default Value Of 'city' site field
+                    await AddItemsToList(ctx, 2, true, true);
                 }
 
                 Console.WriteLine($"Press Any Key To Stop!");
@@ -141,47 +153,44 @@ namespace CSOM_Programming
             Console.WriteLine("Finished!");
         }
 
-        private static async Task AddItemsToList (ClientContext ctx, int amount)
+        private static async Task AddItemsToList(ClientContext ctx, int amount, bool isAboutDefault = false, bool isCityDefault = false)
         {
             for (int i = 0; i < amount; i++)
             {
-                await AddItemToList(ctx, (i+1).ToString());
+                await AddItemToList(ctx, isAboutDefault ? null : (i+1).ToString(), isCityDefault);
             }
         }
 
-        private static async Task AddItemToList(ClientContext ctx, string about)
+        private static async Task AddItemToList(ClientContext ctx, string about = null, bool isCityDefault = false)
         {
             List myList = ctx.Web.Lists.GetByTitle("CSOM Test");
 
             ListItemCreationInformation creationInfo = new ListItemCreationInformation();
             ListItem newItem = myList.AddItem(creationInfo);
-            newItem["about"] = $"Item {about}";
-            newItem.Update();
+            if (about != null)
+                newItem["about"] = $"Item {about}";
 
-            ctx.Load(newItem);
-            await ctx.ExecuteQueryAsync();
-
-            var clientRuntimeContext = newItem.Context;
-            var field = myList.Fields.GetByTitle("city");
-            var taxKeywordField = clientRuntimeContext.CastTo<TaxonomyField>(field);
-
-            TaxonomySession taxonomySession = TaxonomySession.GetTaxonomySession(ctx);
-
-            TaxonomyFieldValue termValue = new TaxonomyFieldValue()
+            if (!isCityDefault)
             {
-                WssId = -1, 
-                Label = "Stockholm",
-                TermGuid = "9661521e-608d-42c5-83f6-e96c674a32db"
-            };
+                var field = ctx.Web.Fields.GetByTitle("city");
 
-            taxKeywordField.SetFieldValueByValue(newItem, termValue);
-            taxKeywordField.Update();
+                var taxCityField = ctx.CastTo<TaxonomyField>(field);
 
+                taxCityField.SetFieldValueByValue(newItem, new TaxonomyFieldValue()
+                {
+                    WssId = -1,
+                    Label = "Stockholm",
+                    TermGuid = "9661521e-608d-42c5-83f6-e96c674a32db"
+                });
+
+                //var clientRuntimeContext = newItem.Context;
+                //var field = myList.Fields.GetByTitle("city");
+                //var taxCityField = clientRuntimeContext.CastTo<TaxonomyField>(field);
+            }
             newItem.Update();
-            ctx.Load(newItem);
             await ctx.ExecuteQueryAsync();
 
-            Console.WriteLine($"Item {about}");
+            Console.WriteLine($"Created Item!");
         }
 
         private static async Task DisplayListColumns(ClientContext ctx)
@@ -266,17 +275,46 @@ namespace CSOM_Programming
             await ctx.ExecuteQueryAsync();
 
             Field field = ctx.Web.Fields.GetByTitle("city");
-            TaxonomyField taxonomyField = ctx.CastTo<TaxonomyField>(field);
-            taxonomyField.SspId = termStore.Id;
-            taxonomyField.TermSetId = termSet.Id;
-            taxonomyField.TargetTemplate = String.Empty;
-            taxonomyField.AnchorId = Guid.Empty;
-            taxonomyField.Update();
+            TaxonomyField taxCityField = ctx.CastTo<TaxonomyField>(field);
+            taxCityField.SspId = termStore.Id;
+            taxCityField.TermSetId = termSet.Id;
+            taxCityField.TargetTemplate = String.Empty;
+            taxCityField.AnchorId = Guid.Empty;
+            taxCityField.UpdateAndPushChanges(true);
 
             await ctx.ExecuteQueryAsync();
 
             Console.WriteLine("Finished!");
         } 
+
+        private static async Task SetDefaultValueForAboutField (ClientContext ctx)
+        {
+            Field field = ctx.Web.Fields.GetByTitle("about");
+            field.DefaultValue = "about default";
+            field.UpdateAndPushChanges(true);
+
+            ctx.Load(field, f => f.Title, 
+                            f => f.DefaultValue);
+
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine($"Successfully set '{field.Title}' site field default value to '{field.DefaultValue}'");
+        }
+
+        private static async Task SetDefaultValueForCityField(ClientContext ctx)
+        {
+            Field field = ctx.Web.Fields.GetByTitle("city");
+            TaxonomyField taxCityField = ctx.CastTo<TaxonomyField>(field);
+            taxCityField.DefaultValue = "2;#Ho Chi Minh|8d6eea46-5de6-441c-9740-aca1928ba368";
+            taxCityField.UpdateAndPushChanges(true);
+
+            ctx.Load(taxCityField, t => t.Title,
+                            t => t.DefaultValue);
+
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine($"Successfully set '{taxCityField.Title}' site field default value to '{taxCityField.DefaultValue}'");
+        }
         #endregion
 
 
@@ -301,7 +339,8 @@ namespace CSOM_Programming
 
             ContentType myContentType = contentTypes.Add(creationInfo);
 
-            ctx.Load(myContentType, c => c.Name, c => c.Id);
+            ctx.Load(myContentType, c => c.Name,
+                                    c => c.Id);
 
             await ctx.ExecuteQueryAsync();
 

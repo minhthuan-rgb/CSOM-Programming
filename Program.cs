@@ -12,7 +12,6 @@ namespace CSOM_Programming
     {
         static async Task Main(string[] args)
         {
-            
             try
             {
                 using (var clientContextHelper = new ClientContextHelper())
@@ -50,23 +49,50 @@ namespace CSOM_Programming
                     // Set "CSOM Test content type" As Default Content Type In List "CSOM test"
                     //await SetDefaultContentType(ctx);
 
-                    // Bind Taxonomy Field To Term Set
-                    //await BindTaxonomyFieldToTermSet(ctx);
+                    // Bind Taxonomy Field "city" To Term Set
+                    //await BindTaxonomyFieldToTermSet(ctx, "city");
+
+                    // Display All Items List View
+                    //await DisplayAllItemsListView(ctx);
 
                     // Add 5 Items To List CSOM Test
                     //await AddItemsToList(ctx, 5);
 
-                    // Set Default Value For 'about' site field
+                    // Set Default Value For "about" site field
                     //await SetDefaultValueForAboutField(ctx);
 
-                    // Add 2 Items With Default Value Of 'about' site field
+                    // Add 2 Items With Default Value Of "about" site field
                     //await AddItemsToList(ctx, 2, true);
 
-                    // Set Default Value For 'city' site field
-                    await SetDefaultValueForCityField(ctx);
+                    // Set Default Value For "city" site field
+                    //await SetDefaultValueForCityField(ctx);
 
-                    // Add 2 Items With Default Value Of 'city' site field
-                    await AddItemsToList(ctx, 2, true, true);
+                    // Add 2 Items With Default Value Of "city" site field
+                    //await AddItemsToList(ctx, 2, true, true);
+
+                    // Get List Items Where Field "about" is not "about default"
+                    //await GetListItems(ctx);
+
+                    // Create List View by CSOM 
+                    //await CreateListView(ctx);
+
+                    // Update List View Items
+                    //await UpdateListItems(ctx);
+
+                    // Create People Field In List "CSOM Test"
+                    //await CreatePeopleField(ctx);
+
+                    // Migrate all list items to set user admin to field "author"
+                    //await SetUserAdminToAuthorField(ctx);
+
+                    // Create site field "cities" type taxonomy multi values
+                    //await CreateTaxonomyFieldMulti(ctx, "cities");
+
+                    // Bind Taxonomy Field "cities" To Term Set
+                    //await BindTaxonomyFieldToTermSet(ctx, "cities");
+
+                    // Add Field "cities" To Content Type "CSOM Test Content Type"
+                    await AddCitiesFieldToContentType(ctx);
                 }
 
                 Console.WriteLine($"Press Any Key To Stop!");
@@ -77,6 +103,7 @@ namespace CSOM_Programming
                 Console.WriteLine(ex.Message);
             }
         }
+
 
         #region Client Context
         static ClientContext GetContext(ClientContextHelper clientContextHelper)
@@ -136,7 +163,7 @@ namespace CSOM_Programming
         {
             List myList = ctx.Web.Lists.GetByTitle("CSOM Test");
             ContentTypeCollection contentTypes = myList.ContentTypes;
-            ctx.Load(contentTypes);
+            ctx.Load(contentTypes, cts => cts.Include(ct => ct.Name));
             await ctx.ExecuteQueryAsync();
 
             IList<ContentTypeId> reverse = new List<ContentTypeId>();
@@ -153,15 +180,15 @@ namespace CSOM_Programming
             Console.WriteLine("Finished!");
         }
 
-        private static async Task AddItemsToList(ClientContext ctx, int amount, bool isAboutDefault = false, bool isCityDefault = false)
+        private static async Task AddItemsToList(ClientContext ctx, int amount, bool isAboutDefault = false, bool isCityDefault = false, bool isMulti = false)
         {
             for (int i = 0; i < amount; i++)
             {
-                await AddItemToList(ctx, isAboutDefault ? null : (i+1).ToString(), isCityDefault);
+                await AddItemToList(ctx, isAboutDefault ? null : (i+1).ToString(), isCityDefault, isMulti);
             }
         }
 
-        private static async Task AddItemToList(ClientContext ctx, string about = null, bool isCityDefault = false)
+        private static async Task AddItemToList(ClientContext ctx, string about = null, bool isCityDefault = false, bool isMulti = false)
         {
             List myList = ctx.Web.Lists.GetByTitle("CSOM Test");
 
@@ -187,17 +214,157 @@ namespace CSOM_Programming
                 //var field = myList.Fields.GetByTitle("city");
                 //var taxCityField = clientRuntimeContext.CastTo<TaxonomyField>(field);
             }
+
+            if (isMulti)
+            {
+
+            }
+
             newItem.Update();
             await ctx.ExecuteQueryAsync();
 
             Console.WriteLine($"Created Item!");
         }
 
-        private static async Task DisplayListColumns(ClientContext ctx)
+        private static async Task AddMultiItemsToList(ClientContext ctx, int amout)
         {
             List myList = ctx.Web.Lists.GetByTitle("CSOM Test");
 
+
+
             await ctx.ExecuteQueryAsync();
+        }
+
+        private static async Task CreateListView(ClientContext ctx)
+        {
+            List myList = ctx.Web.Lists.GetByTitle("CSOM Test");
+            ctx.Load(myList, ml => ml.Title);
+
+            ViewCollection views = myList.Views;
+            ctx.Load(views, vs => vs.Include(v => v.Title));
+            await ctx.ExecuteQueryAsync();
+
+            View temp = views.Where(view => view.Title == "CSOM Test View").FirstOrDefault();
+
+            if (temp != null)
+            {
+                Console.WriteLine($"List View '{temp.Title}' has already exists!");
+                return;
+            }
+
+            ViewCreationInformation creationInfo = new ViewCreationInformation();
+            creationInfo.Title = "CSOM Test View";
+            //creationInfo.SetAsDefaultView = true;
+            creationInfo.ViewTypeKind = ViewType.Html;
+
+            creationInfo.Query = "<OrderBy>" +
+                                    "<FieldRef Name='Created' Ascending='False'/>" +
+                                "</OrderBy>" +
+                                "<Where>" +
+                                    "<Eq>" +
+                                        "<FieldRef Name='city'/>" +
+                                        "<Value Type = 'Taxonomy'>Ho Chi Minh</Value>" +
+                                    "</Eq>" +
+                                "</Where>";
+
+            string commaSeparateColumnNames = "ID, Title, about, city, Created";
+            creationInfo.ViewFields = commaSeparateColumnNames.Split(", ");
+
+            View listView = views.Add(creationInfo);
+
+            ctx.Load(listView, l => l.Title); 
+
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine($"Successfully Created List View '{listView.Title}' For List '{myList.Title}'!");
+        }
+
+        private static async Task DisplayAllItemsListView(ClientContext ctx)
+        {
+            List myList = ctx.Web.Lists.GetByTitle("CSOM Test");
+            ctx.Load(myList, ml => ml.Title);
+
+            ViewCollection views = myList.Views;
+            ctx.Load(views, vs => vs.Include(v => v.Title));
+            await ctx.ExecuteQueryAsync();
+
+            View allItemsView = views.Where(view => view.Title == "All items").First();
+
+            allItemsView.ViewFields.RemoveAll();
+            allItemsView.ViewFields.Add("ID");
+            allItemsView.ViewFields.Add("about");
+            allItemsView.ViewFields.Add("city");
+
+            allItemsView.DefaultView = true;
+            allItemsView.Update();
+
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine($"Successfully Created List View '{allItemsView.Title}' For List '{myList.Title}'!");
+        }
+
+        private static async Task CreatePeopleField(ClientContext ctx)
+        {
+            List myList = ctx.Web.Lists.GetByTitle("CSOM Test");
+
+            string schemaField = $"<Field ID='{Guid.NewGuid()}' " +
+                                $"Type='User' " +
+                                $"Name='authorr' " +
+                                $"StaticName='authorr' " +
+                                $"DisplayName='authorr' " +
+                                $"UserSelectionMode='PeopleOnly'/>";
+
+            Field userField = myList.Fields.AddFieldAsXml(schemaField, true, AddFieldOptions.AddFieldInternalNameHint);
+
+            ctx.Load(userField, uf => uf.StaticName);
+
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine($"Successfully Created '{userField.StaticName}' Field!");
+        }
+
+        private static async Task SetUserAdminToAuthorField(ClientContext ctx)
+        {
+            List myList = ctx.Web.Lists.GetByTitle("CSOM Test");
+
+            var items = myList.GetItems(new CamlQuery()
+            {
+                ViewXml = @"<View>
+                                <Query>
+                                    <OrderBy>
+                                        <FieldRef Name='ID'/>
+                                    </OrderBy>
+                                </Query>
+                                <ViewFields>
+                                    <FieldRef Name='authorr'/>
+                                </ViewFields>
+                            </View>"
+            });
+            ctx.Load(items, its => its.Include(it => it["authorr"]));
+
+            var builder = new ConfigurationBuilder().AddJsonFile($"appsettings.json", true, true);
+            IConfiguration config = builder.Build();
+            var info = config.GetSection("SharepointInfo").Get<SharepointInfo>();
+
+            User user = ctx.Web.EnsureUser(info.Username);
+            ctx.Load(user);
+
+            await ctx.ExecuteQueryAsync();
+
+            FieldUserValue userValue = new FieldUserValue()
+            {
+                LookupId = user.Id
+            };
+
+            foreach (var item in items)
+            {
+                item["authorr"] = userValue;
+                item.Update();
+            }
+
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine("Finished!");
         }
 
         private static async Task DeleteList(ClientContext ctx, string title)
@@ -237,18 +404,6 @@ namespace CSOM_Programming
 
 
         #region Fields
-        private static async Task CreateField(ClientContext ctx, string name, string type)
-        {
-            string schemaField = $"<Field ID='{Guid.NewGuid()}' Type='{type}' Name='{name}' StaticName='{name}' DisplayName='{name}' Group='59Tese'/>";
-            Field field = ctx.Web.Fields.AddFieldAsXml(schemaField, true, AddFieldOptions.AddFieldInternalNameHint);
-
-            ctx.Load(field, f => f.StaticName);
-
-            await ctx.ExecuteQueryAsync();
-
-            Console.WriteLine($"Successfully Created {field.StaticName} Field!");
-        }
-
         private static async Task CreateTextField(ClientContext ctx, string name)
         {
             await CreateField(ctx, name, "Text");
@@ -259,7 +414,42 @@ namespace CSOM_Programming
             await CreateField(ctx, name, "TaxonomyFieldType");
         }
 
-        private static async Task BindTaxonomyFieldToTermSet(ClientContext ctx)
+        private static async Task CreateTaxonomyFieldMulti(ClientContext ctx, string name)
+        {
+            string schemaField = $"<Field ID='{Guid.NewGuid()}' " +
+                                $"Type='TaxonomyFieldTypeMulti' " +
+                                $"Mult='TRUE' " +
+                                $"Name='{name}' " +
+                                $"StaticName='{name}' " +
+                                $"DisplayName='{name}' " +
+                                $"Group='59Tese'/>";
+            Field field = ctx.Web.Fields.AddFieldAsXml(schemaField, true, AddFieldOptions.AddFieldInternalNameHint);
+
+            ctx.Load(field, f => f.StaticName);
+
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine($"Successfully Created '{field.StaticName}' Field!");
+        }
+
+        private static async Task CreateField(ClientContext ctx, string name, string type)
+        {
+            string schemaField = $"<Field ID='{Guid.NewGuid()}' " +
+                                $"Type='{type}' " +
+                                $"Name='{name}' " +
+                                $"StaticName='{name}' " +
+                                $"DisplayName='{name}' " +
+                                $"Group='59Tese'/>";
+            Field field = ctx.Web.Fields.AddFieldAsXml(schemaField, true, AddFieldOptions.AddFieldInternalNameHint);
+
+            ctx.Load(field, f => f.StaticName);
+
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine($"Successfully Created '{field.StaticName}' Field!");
+        }
+
+        private static async Task BindTaxonomyFieldToTermSet(ClientContext ctx, string fieldName)
         {
             TaxonomySession taxonomySession = TaxonomySession.GetTaxonomySession(ctx);
             TermStore termStore = taxonomySession.GetDefaultSiteCollectionTermStore();
@@ -274,7 +464,7 @@ namespace CSOM_Programming
             ctx.Load(termSet, t => t.Id);
             await ctx.ExecuteQueryAsync();
 
-            Field field = ctx.Web.Fields.GetByTitle("city");
+            Field field = ctx.Web.Fields.GetByTitle(fieldName);
             TaxonomyField taxCityField = ctx.CastTo<TaxonomyField>(field);
             taxCityField.SspId = termStore.Id;
             taxCityField.TermSetId = termSet.Id;
@@ -298,7 +488,7 @@ namespace CSOM_Programming
 
             await ctx.ExecuteQueryAsync();
 
-            Console.WriteLine($"Successfully set '{field.Title}' site field default value to '{field.DefaultValue}'");
+            Console.WriteLine($"Successfully set '{field.Title}' site field default value to '{field.DefaultValue}'!");
         }
 
         private static async Task SetDefaultValueForCityField(ClientContext ctx)
@@ -313,7 +503,7 @@ namespace CSOM_Programming
 
             await ctx.ExecuteQueryAsync();
 
-            Console.WriteLine($"Successfully set '{taxCityField.Title}' site field default value to '{taxCityField.DefaultValue}'");
+            Console.WriteLine($"Successfully set '{taxCityField.Title}' site field default value to '{taxCityField.DefaultValue}'!");
         }
         #endregion
 
@@ -322,7 +512,7 @@ namespace CSOM_Programming
         private static async Task CreateContentType(ClientContext ctx, string name)
         {
             ContentTypeCollection contentTypes = ctx.Web.ContentTypes;
-            ctx.Load(contentTypes);
+            ctx.Load(contentTypes, cts => cts.Include(ct => ct.Name));
             await ctx.ExecuteQueryAsync();
 
             ContentType temp = contentTypes.Where(c => c.Name.Equals(name)).FirstOrDefault();
@@ -351,8 +541,10 @@ namespace CSOM_Programming
         {
             ContentTypeCollection contentTypes = ctx.Web.ContentTypes;
             FieldCollection fields = ctx.Web.Fields;
-            ctx.Load(contentTypes);
-            ctx.Load(fields);
+
+            ctx.Load(contentTypes, cts => cts.Include(ct => ct.Name));
+            ctx.Load(fields, fs => fs.Include(f => f.Group));
+
             await ctx.ExecuteQueryAsync();
 
             ContentType contentType = contentTypes.Where(c => c.Name.Equals("CSOM Test content type")).First();
@@ -367,7 +559,7 @@ namespace CSOM_Programming
             contentType.Update(true);
 
             FieldLinkCollection ctFields = contentType.FieldLinks;
-            ctx.Load(ctFields);
+            ctx.Load(ctFields, fs => fs.Include(f => f.Name));
             await ctx.ExecuteQueryAsync();
 
             ctFields.Where(f => f.Name.Equals("Title")).First().Hidden = true;
@@ -376,6 +568,101 @@ namespace CSOM_Programming
             await ctx.ExecuteQueryAsync();
 
             Console.WriteLine("Finished!");
+        }
+
+        private static async Task AddCitiesFieldToContentType(ClientContext ctx)
+        {
+            ContentTypeCollection contentTypes = ctx.Web.ContentTypes;
+            FieldCollection fields = ctx.Web.Fields;
+
+            ctx.Load(contentTypes, cts => cts.Include(ct => ct.Name));
+            ctx.Load(fields, fs => fs.Include(f => f.StaticName));
+
+            await ctx.ExecuteQueryAsync();
+
+            ContentType contentType = contentTypes.Where(c => c.Name.Equals("CSOM Test content type")).First();
+            Field myField = fields.Where(f => f.StaticName.Equals("cities")).First();
+
+            FieldLinkCreationInformation creationInfo = new FieldLinkCreationInformation();
+            creationInfo.Field = myField;
+            contentType.FieldLinks.Add(creationInfo);
+
+            contentType.Update(true);
+
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine("Finished!");
+        }
+        #endregion
+
+
+        #region CAML Query
+        private static async Task GetListItems(ClientContext ctx)
+        {
+            List myList = ctx.Web.Lists.GetByTitle("CSOM Test");
+
+            var items = myList.GetItems(new CamlQuery()
+            {
+                ViewXml = @"<View>
+                                <Query>
+                                    <Where>
+                                        <Neq>
+                                            <FieldRef Name='about'/>
+                                            <Value Type='Text'>about default</Value>
+                                        </Neq>
+                                    </Where>
+                                </Query>
+                            </View>"
+            });
+
+            ctx.Load(items, its => its.Include(it => it.Id, 
+                                               it => it["about"],
+                                               it => it["city"]
+                                               ));
+            await ctx.ExecuteQueryAsync();
+
+            foreach (var item in items)
+            {
+                TaxonomyFieldValue taxCityFieldValue = item["city"] as TaxonomyFieldValue;
+                Console.WriteLine($"ID: {item.Id} \tAbout: {item["about"]} \tCity: {taxCityFieldValue.Label}");
+            }
+
+            Console.WriteLine("Finished!");
+        }
+
+        private static async Task UpdateListItems(ClientContext ctx)
+        {
+            List myList = ctx.Web.Lists.GetByTitle("CSOM Test");
+
+            var items = myList.GetItems(new CamlQuery()
+            {
+                ViewXml = @"<View>
+                                <Query>
+                                    <Where>
+                                        <Eq>
+                                            <FieldRef Name='about'/>
+                                            <Value Type='Text'>about default</Value>
+                                        </Eq>
+                                    </Where>
+                                </Query>
+                                <RowLimit>2</RowLimit>
+                            </View>"
+            });
+
+            ctx.Load(items, its => its.Include(it => it["about"]));
+            await ctx.ExecuteQueryAsync();
+
+            if (items.Count > 0)
+            {
+                foreach (var item in items)
+                {
+                    item["about"] = "Update script";
+                    item.Update();
+                }
+                await ctx.ExecuteQueryAsync();
+                Console.WriteLine("Finished!");
+            }
+            else Console.WriteLine("There Is No Item To Update!");
         }
         #endregion
     }

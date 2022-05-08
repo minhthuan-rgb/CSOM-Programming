@@ -3,7 +3,9 @@ using Microsoft.SharePoint.Client;
 using Microsoft.SharePoint.Client.Taxonomy;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace CSOM_Programming
@@ -24,10 +26,10 @@ namespace CSOM_Programming
 
                     Console.WriteLine($"Connected Site: {ctx.Web.Title}");
 
-                    // Create List CSOM Test
-                    //await CreateList(ctx, "CSOM Test");
+                    // Create List "CSOM Test"
+                    //await CreateList(ctx, "Test", ListTemplateType.Announcements);
 
-                    // Delete List CSOM Test
+                    // Delete List "CSOM Test"
                     //await DeleteList(ctx, "CSOM Test");
 
                     // Create Term Set And 2 Terms
@@ -40,8 +42,8 @@ namespace CSOM_Programming
                     // Create Content Type "CSOM Test content type"
                     //await CreateContentType(ctx, "CSOM Test content type");
 
-                    // Add Content Type To List CSOM Test
-                    //await AddContentTypeToList(ctx);
+                    // Add Content Type To List "CSOM Test"
+                    //await AddContentTypeToList(ctx, "CSOM Test");
 
                     // Add 2 Fields "about" And "city" To Content Type "CSOM Test content type"
                     //await AddFieldsToContentType(ctx);
@@ -55,7 +57,7 @@ namespace CSOM_Programming
                     // Display All Items List View
                     //await DisplayAllItemsListView(ctx);
 
-                    // Add 5 Items To List CSOM Test
+                    // Add 5 Items To List "CSOM Test"
                     //await AddItemsToList(ctx, 5);
 
                     // Set Default Value For "about" site field
@@ -92,7 +94,37 @@ namespace CSOM_Programming
                     //await BindTaxonomyFieldToTermSet(ctx, "cities");
 
                     // Add Field "cities" To Content Type "CSOM Test Content Type"
-                    await AddCitiesFieldToContentType(ctx);
+                    //await AddCitiesFieldToContentType(ctx);
+
+                    // Add 3 Items With Field "Cities" Multi Value
+                    //await AddItemsToList(ctx, 3, true, true, true);
+
+                    // Display "cities" Field 
+                    //await DisplayCitiesField(ctx);
+
+                    // Create List "Document Test"
+                    //await CreateList(ctx, "Document Test", ListTemplateType.DocumentLibrary);
+
+                    // Add Content Type TO List "Document Test"
+                    //await AddContentTypeToList(ctx, "Document Test");
+
+                    // Create Folders For List "Document Test"
+                    //await CreateFolders(ctx);
+
+                    // Add 3 Files In "Folder 2" With Value "Folder test" In Field "about"
+                    //await AddFilesInsideFolder(ctx, 3, "FolderTest");
+
+                    // Add 2 Files In "Folder 2" With Value "Stockholm" In Field "cities"
+                    //await AddFilesInsideFolder(ctx, 2, "CitiesTest", true);
+
+                    // Get All List Items Just In "Folder 2" And Have Value "Stockholm" in "cities" field
+                    //await GetListItemInFolderOnly(ctx);
+
+                    // Create List Item In "Document Test" By Upload A File Document.docx
+                    //await CreateListItemByUploadFile(ctx);
+
+                    // Display All Documents List View
+                    //await DisplayAllDocumentsListView(ctx);
                 }
 
                 Console.WriteLine($"Press Any Key To Stop!");
@@ -117,11 +149,11 @@ namespace CSOM_Programming
 
 
         #region List
-        private static async Task CreateList(ClientContext ctx, string title)
+        private static async Task CreateList(ClientContext ctx, string title, ListTemplateType type)
         {
-            ListCreationInformation creationInfo = new ListCreationInformation();
+            var creationInfo = new ListCreationInformation();
             creationInfo.Title = title;
-            creationInfo.TemplateType = (int)ListTemplateType.Announcements;
+            creationInfo.TemplateType = (int)type;
             List list = ctx.Web.Lists.Add(creationInfo);
 
             list.Description = $"This is {title} List, that was created from client side";
@@ -133,9 +165,9 @@ namespace CSOM_Programming
             Console.WriteLine($"Successfully Created {list.Title} List!");
         }
 
-        private static async Task AddContentTypeToList(ClientContext ctx)
+        private static async Task AddContentTypeToList(ClientContext ctx, string title)
         {
-            List myList = ctx.Web.Lists.GetByTitle("CSOM Test");
+            List myList = ctx.Web.Lists.GetByTitle(title);
             ctx.Load(myList, list => list.ContentTypesEnabled);
             await ctx.ExecuteQueryAsync();
 
@@ -147,10 +179,10 @@ namespace CSOM_Programming
             }
 
             ContentTypeCollection contentTypes = ctx.Web.ContentTypes;
-            ctx.Load(contentTypes);
+            ctx.Load(contentTypes, cts => cts.Include(ct => ct.Name));
             await ctx.ExecuteQueryAsync();
 
-            ContentType contentType = contentTypes.Where(c => c.Name.Equals("CSOM Test content type")).First();
+            ContentType contentType = contentTypes.First(c => c.Name.Equals("CSOM Test content type"));
             myList.ContentTypes.AddExistingContentType(contentType);
             myList.Update();
 
@@ -184,7 +216,7 @@ namespace CSOM_Programming
         {
             for (int i = 0; i < amount; i++)
             {
-                await AddItemToList(ctx, isAboutDefault ? null : (i+1).ToString(), isCityDefault, isMulti);
+                await AddItemToList(ctx, isAboutDefault ? null : (i + 1).ToString(), isCityDefault, isMulti);
             }
         }
 
@@ -192,16 +224,16 @@ namespace CSOM_Programming
         {
             List myList = ctx.Web.Lists.GetByTitle("CSOM Test");
 
-            ListItemCreationInformation creationInfo = new ListItemCreationInformation();
+            var creationInfo = new ListItemCreationInformation();
             ListItem newItem = myList.AddItem(creationInfo);
             if (about != null)
                 newItem["about"] = $"Item {about}";
 
             if (!isCityDefault)
             {
-                var field = ctx.Web.Fields.GetByTitle("city");
+                var cityField = ctx.Web.Fields.GetByTitle("city");
 
-                var taxCityField = ctx.CastTo<TaxonomyField>(field);
+                var taxCityField = ctx.CastTo<TaxonomyField>(cityField);
 
                 taxCityField.SetFieldValueByValue(newItem, new TaxonomyFieldValue()
                 {
@@ -217,22 +249,17 @@ namespace CSOM_Programming
 
             if (isMulti)
             {
+                var citiesField = ctx.Web.Fields.GetByTitle("cities");
+                var taxCitiesField = ctx.CastTo<TaxonomyField>(citiesField);
 
+                string fieldValues = "1;#Stockholm|9661521e-608d-42c5-83f6-e96c674a32db;#2;#Ho Chi Minh|8d6eea46-5de6-441c-9740-aca1928ba368";
+                taxCitiesField.SetFieldValueByValueCollection(newItem, new TaxonomyFieldValueCollection(ctx, fieldValues, taxCitiesField));
             }
 
             newItem.Update();
             await ctx.ExecuteQueryAsync();
 
             Console.WriteLine($"Created Item!");
-        }
-
-        private static async Task AddMultiItemsToList(ClientContext ctx, int amout)
-        {
-            List myList = ctx.Web.Lists.GetByTitle("CSOM Test");
-
-
-
-            await ctx.ExecuteQueryAsync();
         }
 
         private static async Task CreateListView(ClientContext ctx)
@@ -244,15 +271,15 @@ namespace CSOM_Programming
             ctx.Load(views, vs => vs.Include(v => v.Title));
             await ctx.ExecuteQueryAsync();
 
-            View temp = views.Where(view => view.Title == "CSOM Test View").FirstOrDefault();
+            View temp = views.FirstOrDefault(view => view.Title.Equals("CSOM Test View"));
 
             if (temp != null)
             {
-                Console.WriteLine($"List View '{temp.Title}' has already exists!");
+                Console.WriteLine($"List View '{temp.Title}' has existed!");
                 return;
             }
 
-            ViewCreationInformation creationInfo = new ViewCreationInformation();
+            var creationInfo = new ViewCreationInformation();
             creationInfo.Title = "CSOM Test View";
             //creationInfo.SetAsDefaultView = true;
             creationInfo.ViewTypeKind = ViewType.Html;
@@ -284,11 +311,7 @@ namespace CSOM_Programming
             List myList = ctx.Web.Lists.GetByTitle("CSOM Test");
             ctx.Load(myList, ml => ml.Title);
 
-            ViewCollection views = myList.Views;
-            ctx.Load(views, vs => vs.Include(v => v.Title));
-            await ctx.ExecuteQueryAsync();
-
-            View allItemsView = views.Where(view => view.Title == "All items").First();
+            View allItemsView = await GetListView(ctx, myList, "All items");
 
             allItemsView.ViewFields.RemoveAll();
             allItemsView.ViewFields.Add("ID");
@@ -300,7 +323,33 @@ namespace CSOM_Programming
 
             await ctx.ExecuteQueryAsync();
 
-            Console.WriteLine($"Successfully Created List View '{allItemsView.Title}' For List '{myList.Title}'!");
+            Console.WriteLine($"Successfully Updated List View '{allItemsView.Title}' For List '{myList.Title}'!");
+        }
+
+        private static async Task DisplayCitiesField(ClientContext ctx)
+        {
+            List myList = ctx.Web.Lists.GetByTitle("CSOM Test");
+            ctx.Load(myList, ml => ml.Title);
+
+            View allItemsView = await GetListView(ctx, myList, "All items");
+
+            allItemsView.ViewFields.Add("cities");
+            allItemsView.Update();
+
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine($"Successfully Add 'cities' Field To List View '{allItemsView.Title}' For List '{myList.Title}'!");
+        }
+
+        private static async Task<View> GetListView(ClientContext ctx, List list, string title)
+        {
+            ViewCollection views = list.Views;
+            ctx.Load(views, vs => vs.Include(v => v.Title));
+            await ctx.ExecuteQueryAsync();
+
+            View allItemsView = views.First(view => view.Title.Equals(title));
+
+            return allItemsView;
         }
 
         private static async Task CreatePeopleField(ClientContext ctx)
@@ -378,6 +427,116 @@ namespace CSOM_Programming
             Console.WriteLine($"Successfully Deleted {list.Title} List!");
         }
 
+        private static async Task CreateFolders(ClientContext ctx)
+        {
+            List myList = ctx.Web.Lists.GetByTitle("Document Test");
+
+            var folder = myList.RootFolder;
+
+            folder = folder.Folders.Add("Folder 1");
+            folder.Folders.Add("Folder 2");
+
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine("Finished!");
+        }
+
+        private static async Task AddFilesInsideFolder(ClientContext ctx, int amount, string title, bool isCities = false)
+        {
+            List myList = ctx.Web.Lists.GetByTitle("Document Test");
+
+            var folder = myList.RootFolder;
+
+            folder = folder.Folders.GetByUrl("Folder 1");
+            folder = folder.Folders.GetByUrl("Folder 2");
+
+            for (int i = 0; i < amount; i++)
+            {
+                await AddFileToFolder(ctx, $"{title}{i + 1}", folder, isCities);
+            }
+        }
+
+        private static async Task AddFileToFolder(ClientContext ctx, string title,Folder folder, bool isCities)
+        { 
+            FileCollection files = folder.Files;
+            ctx.Load(files, fs => fs.Include(f => f.Name));
+            await ctx.ExecuteQueryAsync();
+
+            var temp = files.FirstOrDefault(f => f.Name.Equals($"{title}.docx"));
+
+            if (temp != null)
+            {
+                Console.WriteLine($"'{ title}.docx' has existed!");
+                return;
+            }
+
+            var creationInfo = new FileCreationInformation();
+            creationInfo.Url = $"{title}.docx";
+            creationInfo.Content = Encoding.ASCII.GetBytes($"Folder test");
+
+            var addedFile = folder.Files.Add(creationInfo);
+            ctx.Load(addedFile, af => af.ListItemAllFields,
+                                af => af.Name);
+
+            ListItem newItem = addedFile.ListItemAllFields;
+
+            if (isCities)
+            {
+                var citiesField = ctx.Web.Fields.GetByTitle("cities");
+                var taxCitiesField = ctx.CastTo<TaxonomyField>(citiesField);
+
+                string fieldValues = "1;#Stockholm|9661521e-608d-42c5-83f6-e96c674a32db";
+                taxCitiesField.SetFieldValueByValueCollection(newItem, new TaxonomyFieldValueCollection(ctx, fieldValues, taxCitiesField));
+            }
+            else newItem["about"] = "Folder Test";
+
+            newItem.Update(); 
+
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine($"Created Item {addedFile.Name}");
+        }
+
+        private static async Task CreateListItemByUploadFile(ClientContext ctx)
+        {
+            List myList = ctx.Web.Lists.GetByTitle("Document Test");
+            var folder = myList.RootFolder;
+
+            var creationInfo = new FileCreationInformation()
+            {
+                Content = System.IO.File.ReadAllBytes("D:\\Document.docx"),
+                Overwrite = true,
+                Url = Path.GetFileName("D:\\Document.docx")
+            };
+            var uploadFile = folder.Files.Add(creationInfo);
+            ctx.Load(uploadFile);
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine($"Created Item {uploadFile.Name}");
+        }
+
+        private static async Task DisplayAllDocumentsListView(ClientContext ctx)
+        {
+            List myList = ctx.Web.Lists.GetByTitle("Document Test");
+            ctx.Load(myList, ml => ml.Title);
+            View allDocumentsView = await GetListView(ctx, myList, "All Documents");
+
+            allDocumentsView.ViewFields.Add("about");
+            allDocumentsView.ViewFields.Add("city");
+            allDocumentsView.ViewFields.Add("cities");
+
+            allDocumentsView.DefaultView = true;
+            allDocumentsView.Update();
+
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine($"Successfully Updated List View '{allDocumentsView.Title}' For List '{myList.Title}'!");
+        }
+
+        private static async Task CreateFolderStructerView(ClientContext ctx)
+        {
+            await ctx.ExecuteQueryAsync();
+        }
         #endregion
 
 
@@ -515,17 +674,17 @@ namespace CSOM_Programming
             ctx.Load(contentTypes, cts => cts.Include(ct => ct.Name));
             await ctx.ExecuteQueryAsync();
 
-            ContentType temp = contentTypes.Where(c => c.Name.Equals(name)).FirstOrDefault();
+            ContentType temp = contentTypes.FirstOrDefault(c => c.Name.Equals(name));
             if (temp != null)
             {
-                Console.WriteLine($"Content type name '{name}' has already exists!");
+                Console.WriteLine($"Content type name '{name}' has existed!");
                 return;
             }
 
-            ContentTypeCreationInformation creationInfo = new ContentTypeCreationInformation();
+            var creationInfo = new ContentTypeCreationInformation();
             creationInfo.Name = name;
             creationInfo.Group = "59Tese Content Types";
-            creationInfo.ParentContentType = contentTypes.Where(c => c.Name.Equals("Item")).First();
+            creationInfo.ParentContentType = contentTypes.First(c => c.Name.Equals("Item"));
 
             ContentType myContentType = contentTypes.Add(creationInfo);
 
@@ -547,12 +706,12 @@ namespace CSOM_Programming
 
             await ctx.ExecuteQueryAsync();
 
-            ContentType contentType = contentTypes.Where(c => c.Name.Equals("CSOM Test content type")).First();
+            ContentType contentType = contentTypes.First(c => c.Name.Equals("CSOM Test content type"));
             var groupFields = fields.Where(f => f.Group.Equals("59Tese")).Select(f => f);
 
             foreach (Field field in groupFields)
             {
-                FieldLinkCreationInformation creationInfo = new FieldLinkCreationInformation();
+                var creationInfo = new FieldLinkCreationInformation();
                 creationInfo.Field = field;
                 contentType.FieldLinks.Add(creationInfo);
             }
@@ -562,7 +721,7 @@ namespace CSOM_Programming
             ctx.Load(ctFields, fs => fs.Include(f => f.Name));
             await ctx.ExecuteQueryAsync();
 
-            ctFields.Where(f => f.Name.Equals("Title")).First().Hidden = true;
+            ctFields.First(f => f.Name.Equals("Title")).Hidden = true;
             contentType.Update(true);
 
             await ctx.ExecuteQueryAsync();
@@ -580,10 +739,10 @@ namespace CSOM_Programming
 
             await ctx.ExecuteQueryAsync();
 
-            ContentType contentType = contentTypes.Where(c => c.Name.Equals("CSOM Test content type")).First();
-            Field myField = fields.Where(f => f.StaticName.Equals("cities")).First();
+            ContentType contentType = contentTypes.First(c => c.Name.Equals("CSOM Test content type"));
+            Field myField = fields.First(f => f.StaticName.Equals("cities"));
 
-            FieldLinkCreationInformation creationInfo = new FieldLinkCreationInformation();
+            var creationInfo = new FieldLinkCreationInformation();
             creationInfo.Field = myField;
             contentType.FieldLinks.Add(creationInfo);
 
@@ -614,7 +773,6 @@ namespace CSOM_Programming
                                 </Query>
                             </View>"
             });
-
             ctx.Load(items, its => its.Include(it => it.Id, 
                                                it => it["about"],
                                                it => it["city"]
@@ -663,6 +821,47 @@ namespace CSOM_Programming
                 Console.WriteLine("Finished!");
             }
             else Console.WriteLine("There Is No Item To Update!");
+        }
+
+        private static async Task GetListItemInFolderOnly(ClientContext ctx)
+        {
+            List myList = ctx.Web.Lists.GetByTitle("Document Test");
+
+            //Folder folder = ctx.Web.GetFolderByServerRelativeUrl(ctx.Web.ServerRelativeUrl + "/Document%20Test/Folder%201/Folder%202");
+            var folder = myList.RootFolder;
+            folder = folder.Folders.GetByUrl("Folder 1");
+            folder = folder.Folders.GetByUrl("Folder 2");
+            ctx.Load(folder, f => f.ServerRelativeUrl);
+            await ctx.ExecuteQueryAsync();
+
+            CamlQuery query = new CamlQuery();
+            query.ViewXml = @$"<View>
+                                <Query>
+                                    <Where>
+                                        <Includes>
+                                            <FieldRef Name='cities'/>
+                                            <Value Type='TaxonomyFieldTypeMulti'>Stockholm</Value>
+                                        </Includes>
+                                    </Where>
+                                </Query>
+                            </View>";
+            query.FolderServerRelativeUrl = folder.ServerRelativeUrl;
+            var items = myList.GetItems(query);
+            ctx.Load(items, its => its.Include(it => it.Id,
+                                               it => it["about"],
+                                               it => it["cities"]
+                                               ));
+            await ctx.ExecuteQueryAsync();
+
+            foreach (var item in items)
+            {
+                TaxonomyFieldValueCollection taxCitiesFieldValues = item["cities"] as TaxonomyFieldValueCollection;
+                string res = $"ID: {item.Id} \tAbout: {item["about"]} \tCities: ";
+                foreach (var value in taxCitiesFieldValues)
+                    res += value.Label + " | ";
+                Console.WriteLine(res);
+            }
+            Console.WriteLine("Finished!");
         }
         #endregion
     }

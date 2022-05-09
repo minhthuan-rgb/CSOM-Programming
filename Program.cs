@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.SharePoint.Client;
 using Microsoft.SharePoint.Client.Taxonomy;
+using Microsoft.SharePoint.Client.UserProfiles;
+using Microsoft.SharePoint.Client.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -49,7 +51,7 @@ namespace CSOM_Programming
                     //await AddFieldsToContentType(ctx);
 
                     // Set "CSOM Test content type" As Default Content Type In List "CSOM test"
-                    //await SetDefaultContentType(ctx);
+                    //await SetDefaultContentType(ctx, "CSOM Test");
 
                     // Bind Taxonomy Field "city" To Term Set
                     //await BindTaxonomyFieldToTermSet(ctx, "city");
@@ -111,6 +113,9 @@ namespace CSOM_Programming
                     // Create Folders For List "Document Test"
                     //await CreateFolders(ctx);
 
+                    // Set "CSOM Test content type" As Default Content Type In List "Document Test"
+                    //await SetDefaultContentType(ctx, "Document Test");
+
                     // Add 3 Files In "Folder 2" With Value "Folder test" In Field "about"
                     //await AddFilesInsideFolder(ctx, 3, "FolderTest");
 
@@ -125,6 +130,12 @@ namespace CSOM_Programming
 
                     // Display All Documents List View
                     //await DisplayAllDocumentsListView(ctx);
+
+                    // Create Folder Structure View
+                    await CreateFolderStructureView(ctx);
+
+                    // Load User From User Email Or Name
+                    //await LoadUser(ctx, "59Tese");
                 }
 
                 Console.WriteLine($"Press Any Key To Stop!");
@@ -159,7 +170,7 @@ namespace CSOM_Programming
             list.Description = $"This is {title} List, that was created from client side";
             list.OnQuickLaunch = true;
             list.Update();
-            
+
             await ctx.ExecuteQueryAsync();
 
             Console.WriteLine($"Successfully Created {list.Title} List!");
@@ -171,7 +182,7 @@ namespace CSOM_Programming
             ctx.Load(myList, list => list.ContentTypesEnabled);
             await ctx.ExecuteQueryAsync();
 
-            if(!myList.ContentTypesEnabled)
+            if (!myList.ContentTypesEnabled)
             {
                 myList.ContentTypesEnabled = true;
                 myList.Update();
@@ -191,11 +202,12 @@ namespace CSOM_Programming
             Console.WriteLine("Finished!");
         }
 
-        private static async Task SetDefaultContentType(ClientContext ctx)
+        private static async Task SetDefaultContentType(ClientContext ctx, string title)
         {
-            List myList = ctx.Web.Lists.GetByTitle("CSOM Test");
+            List myList = ctx.Web.Lists.GetByTitle(title);
             ContentTypeCollection contentTypes = myList.ContentTypes;
-            ctx.Load(contentTypes, cts => cts.Include(ct => ct.Name));
+            ctx.Load(contentTypes, cts => cts.Include(ct => ct.Name,
+                                                      ct => ct.Id));
             await ctx.ExecuteQueryAsync();
 
             IList<ContentTypeId> reverse = new List<ContentTypeId>();
@@ -283,7 +295,6 @@ namespace CSOM_Programming
             creationInfo.Title = "CSOM Test View";
             //creationInfo.SetAsDefaultView = true;
             creationInfo.ViewTypeKind = ViewType.Html;
-
             creationInfo.Query = "<OrderBy>" +
                                     "<FieldRef Name='Created' Ascending='False'/>" +
                                 "</OrderBy>" +
@@ -293,13 +304,11 @@ namespace CSOM_Programming
                                         "<Value Type = 'Taxonomy'>Ho Chi Minh</Value>" +
                                     "</Eq>" +
                                 "</Where>";
-
             string commaSeparateColumnNames = "ID, Title, about, city, Created";
             creationInfo.ViewFields = commaSeparateColumnNames.Split(", ");
 
             View listView = views.Add(creationInfo);
-
-            ctx.Load(listView, l => l.Title); 
+            ctx.Load(listView, l => l.Title);
 
             await ctx.ExecuteQueryAsync();
 
@@ -356,20 +365,7 @@ namespace CSOM_Programming
         {
             List myList = ctx.Web.Lists.GetByTitle("CSOM Test");
 
-            string schemaField = $"<Field ID='{Guid.NewGuid()}' " +
-                                $"Type='User' " +
-                                $"Name='authorr' " +
-                                $"StaticName='authorr' " +
-                                $"DisplayName='authorr' " +
-                                $"UserSelectionMode='PeopleOnly'/>";
-
-            Field userField = myList.Fields.AddFieldAsXml(schemaField, true, AddFieldOptions.AddFieldInternalNameHint);
-
-            ctx.Load(userField, uf => uf.StaticName);
-
-            await ctx.ExecuteQueryAsync();
-
-            Console.WriteLine($"Successfully Created '{userField.StaticName}' Field!");
+            await CreateField(ctx, "authorr", FieldType.User, myList.Fields);
         }
 
         private static async Task SetUserAdminToAuthorField(ClientContext ctx)
@@ -391,18 +387,14 @@ namespace CSOM_Programming
             });
             ctx.Load(items, its => its.Include(it => it["authorr"]));
 
-            var builder = new ConfigurationBuilder().AddJsonFile($"appsettings.json", true, true);
-            IConfiguration config = builder.Build();
-            var info = config.GetSection("SharepointInfo").Get<SharepointInfo>();
-
-            User user = ctx.Web.EnsureUser(info.Username);
-            ctx.Load(user);
+            User user = ctx.Web.EnsureUser(await LoadCurrentUserEmail(ctx));
+            ctx.Load(user, u => u.Id);
 
             await ctx.ExecuteQueryAsync();
 
             FieldUserValue userValue = new FieldUserValue()
             {
-                LookupId = user.Id
+                LookupId = user.Id,
             };
 
             foreach (var item in items)
@@ -414,6 +406,18 @@ namespace CSOM_Programming
             await ctx.ExecuteQueryAsync();
 
             Console.WriteLine("Finished!");
+        }
+
+        private static async Task<string> LoadCurrentUserEmail(ClientContext ctx)
+        {
+            //User currentUser = ctx.Web.CurrentUser; 
+
+            PeopleManager peopleManager = new PeopleManager(ctx);
+            PersonProperties properties = peopleManager.GetMyProperties();
+            ctx.Load(properties, p => p.DisplayName,
+                                 p => p.Email);
+            await ctx.ExecuteQueryAsync();
+            return properties.Email;
         }
 
         private static async Task DeleteList(ClientContext ctx, string title)
@@ -432,7 +436,6 @@ namespace CSOM_Programming
             List myList = ctx.Web.Lists.GetByTitle("Document Test");
 
             var folder = myList.RootFolder;
-
             folder = folder.Folders.Add("Folder 1");
             folder.Folders.Add("Folder 2");
 
@@ -446,39 +449,42 @@ namespace CSOM_Programming
             List myList = ctx.Web.Lists.GetByTitle("Document Test");
 
             var folder = myList.RootFolder;
-
             folder = folder.Folders.GetByUrl("Folder 1");
             folder = folder.Folders.GetByUrl("Folder 2");
 
             for (int i = 0; i < amount; i++)
-            {
                 await AddFileToFolder(ctx, $"{title}{i + 1}", folder, isCities);
-            }
         }
 
-        private static async Task AddFileToFolder(ClientContext ctx, string title,Folder folder, bool isCities)
-        { 
+        private static async Task AddFileToFolder(ClientContext ctx, string title, Folder folder, bool isCities)
+        {
             FileCollection files = folder.Files;
             ctx.Load(files, fs => fs.Include(f => f.Name));
+
+            ContentTypeCollection contentTypes = ctx.Web.ContentTypes;
+            ctx.Load(contentTypes, cts => cts.Include(ct => ct.Name,
+                                                      ct => ct.Id));
             await ctx.ExecuteQueryAsync();
 
             var temp = files.FirstOrDefault(f => f.Name.Equals($"{title}.docx"));
 
             if (temp != null)
             {
-                Console.WriteLine($"'{ title}.docx' has existed!");
+                Console.WriteLine($"'{title}.docx' has existed!");
                 return;
             }
 
-            var creationInfo = new FileCreationInformation();
-            creationInfo.Url = $"{title}.docx";
-            creationInfo.Content = Encoding.ASCII.GetBytes($"Folder test");
+            var creationInfo = new FileCreationInformation()
+            {
+                Content = Encoding.ASCII.GetBytes("Folder test"),
+                Overwrite = true,
+                Url = $"{title}.docx"
+            };
+            var addedFile = files.Add(creationInfo);
 
-            var addedFile = folder.Files.Add(creationInfo);
-            ctx.Load(addedFile, af => af.ListItemAllFields,
-                                af => af.Name);
-
-            ListItem newItem = addedFile.ListItemAllFields;
+            ContentType contentType = contentTypes.First(c => c.Name.Equals("CSOM Test content type"));
+            var newItem = addedFile.ListItemAllFields;
+            newItem["ContentTypeId"] = contentType.Id;
 
             if (isCities)
             {
@@ -490,7 +496,7 @@ namespace CSOM_Programming
             }
             else newItem["about"] = "Folder Test";
 
-            newItem.Update(); 
+            newItem.Update();
 
             await ctx.ExecuteQueryAsync();
 
@@ -502,6 +508,11 @@ namespace CSOM_Programming
             List myList = ctx.Web.Lists.GetByTitle("Document Test");
             var folder = myList.RootFolder;
 
+            ContentTypeCollection contentTypes = ctx.Web.ContentTypes;
+            ctx.Load(contentTypes, cts => cts.Include(ct => ct.Name,
+                                                      ct => ct.Id));
+            await ctx.ExecuteQueryAsync();
+
             var creationInfo = new FileCreationInformation()
             {
                 Content = System.IO.File.ReadAllBytes("D:\\Document.docx"),
@@ -509,7 +520,12 @@ namespace CSOM_Programming
                 Url = Path.GetFileName("D:\\Document.docx")
             };
             var uploadFile = folder.Files.Add(creationInfo);
-            ctx.Load(uploadFile);
+
+            ContentType contentType = contentTypes.First(c => c.Name.Equals("CSOM Test content type"));
+            var newItem = uploadFile.ListItemAllFields;
+            newItem["ContentTypeId"] = contentType.Id;
+            newItem.Update();
+
             await ctx.ExecuteQueryAsync();
 
             Console.WriteLine($"Created Item {uploadFile.Name}");
@@ -533,9 +549,45 @@ namespace CSOM_Programming
             Console.WriteLine($"Successfully Updated List View '{allDocumentsView.Title}' For List '{myList.Title}'!");
         }
 
-        private static async Task CreateFolderStructerView(ClientContext ctx)
+        private static async Task CreateFolderStructureView(ClientContext ctx)
         {
+            List myList = ctx.Web.Lists.GetByTitle("Document Test");
+
+            ctx.Load(myList, ml => ml.Title);
+
+            ViewCollection views = myList.Views;
+            ctx.Load(views, vs => vs.Include(v => v.Title));
             await ctx.ExecuteQueryAsync();
+
+            View temp = views.FirstOrDefault(view => view.Title.Equals("Folders"));
+
+            if (temp != null)
+            {
+                Console.WriteLine($"List View '{temp.Title}' has existed!");
+                return;
+            }
+
+            var creationInfo = new ViewCreationInformation();
+            creationInfo.Title = "Folders";
+            creationInfo.ViewTypeKind = ViewType.Html;
+            creationInfo.Query = "<Where>" +
+                                    "<Eq>" +
+                                        "<FieldRef Name='FSObjType'/>" +
+                                        "<Value Type='Integer'>1</Value>" +
+                                    "</Eq>" +
+                                "</Where>";
+            string commaSeparateColumnNames = "Type, Name, Modified, Modified By";
+            creationInfo.ViewFields = commaSeparateColumnNames.Split(", ");
+
+            View listView = views.Add(creationInfo);
+            listView.Scope = ViewScope.RecursiveAll;
+            //listView.DefaultView = true;
+            listView.Update();
+
+            ctx.Load(listView, l => l.Title);
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine($"Successfully Created List View '{listView.Title}' For List '{myList.Title}'!");
         }
         #endregion
 
@@ -558,6 +610,8 @@ namespace CSOM_Programming
             Term stockholm = termSet.CreateTerm("Stockholm", 1033, Guid.NewGuid());
 
             await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine("Finished!");
         }
         #endregion
 
@@ -565,44 +619,39 @@ namespace CSOM_Programming
         #region Fields
         private static async Task CreateTextField(ClientContext ctx, string name)
         {
-            await CreateField(ctx, name, "Text");
+            await CreateField(ctx, name, FieldType.Text);
         }
 
         private static async Task CreateTaxonomyField(ClientContext ctx, string name)
         {
-            await CreateField(ctx, name, "TaxonomyFieldType");
+            await CreateField(ctx, name, FieldType.TaxonomyFieldType);
         }
 
         private static async Task CreateTaxonomyFieldMulti(ClientContext ctx, string name)
         {
-            string schemaField = $"<Field ID='{Guid.NewGuid()}' " +
-                                $"Type='TaxonomyFieldTypeMulti' " +
-                                $"Mult='TRUE' " +
-                                $"Name='{name}' " +
-                                $"StaticName='{name}' " +
-                                $"DisplayName='{name}' " +
-                                $"Group='59Tese'/>";
-            Field field = ctx.Web.Fields.AddFieldAsXml(schemaField, true, AddFieldOptions.AddFieldInternalNameHint);
-
-            ctx.Load(field, f => f.StaticName);
-
-            await ctx.ExecuteQueryAsync();
-
-            Console.WriteLine($"Successfully Created '{field.StaticName}' Field!");
+            await CreateField(ctx, name, FieldType.TaxonomyFieldTypeMulti);
         }
 
-        private static async Task CreateField(ClientContext ctx, string name, string type)
+        private static async Task CreateField(ClientContext ctx, string name, FieldType fieldType, FieldCollection fields = null)
         {
+            string isMultiStr = fieldType == FieldType.TaxonomyFieldTypeMulti ? "Mult='TRUE' " : "";
+            string isUserString = fieldType == FieldType.User ? "UserSelectionMode='PeopleOnly' " : "";
+
             string schemaField = $"<Field ID='{Guid.NewGuid()}' " +
-                                $"Type='{type}' " +
+                                $"Type='{fieldType.ToString()}' " +
+                                isMultiStr +
                                 $"Name='{name}' " +
                                 $"StaticName='{name}' " +
                                 $"DisplayName='{name}' " +
+                                isUserString +
                                 $"Group='59Tese'/>";
-            Field field = ctx.Web.Fields.AddFieldAsXml(schemaField, true, AddFieldOptions.AddFieldInternalNameHint);
+
+            Field field = null;
+            if (fields != null)
+                field = fields.AddFieldAsXml(schemaField, true, AddFieldOptions.AddFieldInternalNameHint);
+            else field = ctx.Web.Fields.AddFieldAsXml(schemaField, true, AddFieldOptions.AddFieldInternalNameHint);
 
             ctx.Load(field, f => f.StaticName);
-
             await ctx.ExecuteQueryAsync();
 
             Console.WriteLine($"Successfully Created '{field.StaticName}' Field!");
@@ -634,15 +683,15 @@ namespace CSOM_Programming
             await ctx.ExecuteQueryAsync();
 
             Console.WriteLine("Finished!");
-        } 
+        }
 
-        private static async Task SetDefaultValueForAboutField (ClientContext ctx)
+        private static async Task SetDefaultValueForAboutField(ClientContext ctx)
         {
             Field field = ctx.Web.Fields.GetByTitle("about");
             field.DefaultValue = "about default";
             field.UpdateAndPushChanges(true);
 
-            ctx.Load(field, f => f.Title, 
+            ctx.Load(field, f => f.Title,
                             f => f.DefaultValue);
 
             await ctx.ExecuteQueryAsync();
@@ -762,18 +811,18 @@ namespace CSOM_Programming
 
             var items = myList.GetItems(new CamlQuery()
             {
-                ViewXml = @"<View>
+                ViewXml = @$"<View>
                                 <Query>
                                     <Where>
                                         <Neq>
                                             <FieldRef Name='about'/>
-                                            <Value Type='Text'>about default</Value>
+                                            <Value Type='{FieldType.Text.ToString()}'>about default</Value>
                                         </Neq>
                                     </Where>
                                 </Query>
                             </View>"
             });
-            ctx.Load(items, its => its.Include(it => it.Id, 
+            ctx.Load(items, its => its.Include(it => it.Id,
                                                it => it["about"],
                                                it => it["city"]
                                                ));
@@ -794,19 +843,18 @@ namespace CSOM_Programming
 
             var items = myList.GetItems(new CamlQuery()
             {
-                ViewXml = @"<View>
+                ViewXml = @$"<View>
                                 <Query>
                                     <Where>
                                         <Eq>
                                             <FieldRef Name='about'/>
-                                            <Value Type='Text'>about default</Value>
+                                            <Value Type='{FieldType.Text.ToString()}'>about default</Value>
                                         </Eq>
                                     </Where>
                                 </Query>
                                 <RowLimit>2</RowLimit>
                             </View>"
             });
-
             ctx.Load(items, its => its.Include(it => it["about"]));
             await ctx.ExecuteQueryAsync();
 
@@ -834,19 +882,20 @@ namespace CSOM_Programming
             ctx.Load(folder, f => f.ServerRelativeUrl);
             await ctx.ExecuteQueryAsync();
 
-            CamlQuery query = new CamlQuery();
-            query.ViewXml = @$"<View>
+            var items = myList.GetItems(new CamlQuery()
+            {
+                ViewXml = @$"<View>
                                 <Query>
                                     <Where>
                                         <Includes>
                                             <FieldRef Name='cities'/>
-                                            <Value Type='TaxonomyFieldTypeMulti'>Stockholm</Value>
+                                            <Value Type='{FieldType.TaxonomyFieldTypeMulti.ToString()}'>Stockholm</Value>
                                         </Includes>
                                     </Where>
                                 </Query>
-                            </View>";
-            query.FolderServerRelativeUrl = folder.ServerRelativeUrl;
-            var items = myList.GetItems(query);
+                            </View>",
+                FolderServerRelativeUrl = folder.ServerRelativeUrl
+            });
             ctx.Load(items, its => its.Include(it => it.Id,
                                                it => it["about"],
                                                it => it["cities"]
@@ -858,11 +907,31 @@ namespace CSOM_Programming
                 TaxonomyFieldValueCollection taxCitiesFieldValues = item["cities"] as TaxonomyFieldValueCollection;
                 string res = $"ID: {item.Id} \tAbout: {item["about"]} \tCities: ";
                 foreach (var value in taxCitiesFieldValues)
-                    res += value.Label + " | ";
+                    res += "| " + value.Label + " |";
                 Console.WriteLine(res);
             }
             Console.WriteLine("Finished!");
         }
         #endregion
+
+
+        // Load User From User Email Or Name
+        private static async Task LoadUser(ClientContext ctx, string logonName)
+        {
+            ClientResult<PrincipalInfo> principal = Utility.ResolvePrincipal(ctx, ctx.Web, logonName, PrincipalType.User, PrincipalSource.All, ctx.Web.SiteUsers, true);
+            await ctx.ExecuteQueryAsync();
+
+            if (principal.Value != null)
+            {
+                var user = ctx.Web.SiteUsers.GetByEmail(principal.Value.Email);
+                ctx.Load(user, u => u.LoginName,
+                               u => u.Email,
+                               u => u.Id);
+                await ctx.ExecuteQueryAsync();
+
+                Console.WriteLine($"Id: {user.Id} \nEmail: {user.Email} \nLoginName: {user.LoginName}");
+            }
+            else Console.WriteLine($"User With Logon Name '{logonName}' Not Found!");
+        }
     }
 }

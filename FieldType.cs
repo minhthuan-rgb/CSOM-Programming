@@ -13,6 +13,7 @@ namespace CSOM_Programming
        Boolean,
        DateTime,
        Number,
+       Integer,
        Choice,
        URL,
        Lookup,

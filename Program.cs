@@ -26,6 +26,7 @@ namespace CSOM_Programming
                     ctx.Load(ctx.Web);
                     await ctx.ExecuteQueryAsync();
 
+                    Console.OutputEncoding = Encoding.UTF8;
                     Console.WriteLine($"Connected Site: {ctx.Web.Title}");
 
                     // Create List "CSOM Test"
@@ -132,10 +133,19 @@ namespace CSOM_Programming
                     //await DisplayAllDocumentsListView(ctx);
 
                     // Create Folder Structure View
-                    await CreateFolderStructureView(ctx);
+                    //await CreateFolderStructureView(ctx);
 
                     // Load User From User Email Or Name
                     //await LoadUser(ctx, "59Tese");
+
+                    // Load TaxonomyHiddenList Items
+                    //await GetTaxonomyHiddenListItems(ctx);
+
+                    // Load All Site Users
+                    //outawait LoadSiteUsers(ctx);
+
+                    // Remove Site Users That Was Deleted In Server
+                    //await RemoveDeletedUser(ctx);
                 }
 
                 Console.WriteLine($"Press Any Key To Stop!");
@@ -188,7 +198,6 @@ namespace CSOM_Programming
                 myList.Update();
                 await ctx.ExecuteQueryAsync();
             }
-
             ContentTypeCollection contentTypes = ctx.Web.ContentTypes;
             ctx.Load(contentTypes, cts => cts.Include(ct => ct.Name));
             await ctx.ExecuteQueryAsync();
@@ -295,15 +304,15 @@ namespace CSOM_Programming
             creationInfo.Title = "CSOM Test View";
             //creationInfo.SetAsDefaultView = true;
             creationInfo.ViewTypeKind = ViewType.Html;
-            creationInfo.Query = "<OrderBy>" +
-                                    "<FieldRef Name='Created' Ascending='False'/>" +
-                                "</OrderBy>" +
-                                "<Where>" +
-                                    "<Eq>" +
-                                        "<FieldRef Name='city'/>" +
-                                        "<Value Type = 'Taxonomy'>Ho Chi Minh</Value>" +
-                                    "</Eq>" +
-                                "</Where>";
+            creationInfo.Query = @$"<OrderBy>
+                                    <FieldRef Name='Created' Ascending='False'/>
+                                </OrderBy>
+                                <Where>
+                                    <Eq>
+                                        <FieldRef Name='city'/>
+                                        <Value Type='{FieldType.TaxonomyFieldType.ToString()}'>Ho Chi Minh</Value>
+                                    </Eq>
+                                </Where>";
             string commaSeparateColumnNames = "ID, Title, about, city, Created";
             creationInfo.ViewFields = commaSeparateColumnNames.Split(", ");
 
@@ -410,8 +419,7 @@ namespace CSOM_Programming
 
         private static async Task<string> LoadCurrentUserEmail(ClientContext ctx)
         {
-            //User currentUser = ctx.Web.CurrentUser; 
-
+            //User currentUser = ctx.Web.CurrentUser;
             PeopleManager peopleManager = new PeopleManager(ctx);
             PersonProperties properties = peopleManager.GetMyProperties();
             ctx.Load(properties, p => p.DisplayName,
@@ -473,7 +481,6 @@ namespace CSOM_Programming
                 Console.WriteLine($"'{title}.docx' has existed!");
                 return;
             }
-
             var creationInfo = new FileCreationInformation()
             {
                 Content = Encoding.ASCII.GetBytes("Folder test"),
@@ -540,7 +547,6 @@ namespace CSOM_Programming
             allDocumentsView.ViewFields.Add("about");
             allDocumentsView.ViewFields.Add("city");
             allDocumentsView.ViewFields.Add("cities");
-
             allDocumentsView.DefaultView = true;
             allDocumentsView.Update();
 
@@ -552,7 +558,6 @@ namespace CSOM_Programming
         private static async Task CreateFolderStructureView(ClientContext ctx)
         {
             List myList = ctx.Web.Lists.GetByTitle("Document Test");
-
             ctx.Load(myList, ml => ml.Title);
 
             ViewCollection views = myList.Views;
@@ -566,22 +571,21 @@ namespace CSOM_Programming
                 Console.WriteLine($"List View '{temp.Title}' has existed!");
                 return;
             }
-
             var creationInfo = new ViewCreationInformation();
             creationInfo.Title = "Folders";
             creationInfo.ViewTypeKind = ViewType.Html;
-            creationInfo.Query = "<Where>" +
-                                    "<Eq>" +
-                                        "<FieldRef Name='FSObjType'/>" +
-                                        "<Value Type='Integer'>1</Value>" +
-                                    "</Eq>" +
-                                "</Where>";
+            creationInfo.Query = @$"<Where>
+                                    <Eq>
+                                        <FieldRef Name='FSObjType'/>
+                                        <Value Type='{FieldType.Integer.ToString()}'>1</Value>
+                                    </Eq>
+                                </Where>";
             string commaSeparateColumnNames = "Type, Name, Modified, Modified By";
             creationInfo.ViewFields = commaSeparateColumnNames.Split(", ");
 
             View listView = views.Add(creationInfo);
             listView.Scope = ViewScope.RecursiveAll;
-            //listView.DefaultView = true;
+            listView.DefaultView = true;
             listView.Update();
 
             ctx.Load(listView, l => l.Title);
@@ -915,6 +919,7 @@ namespace CSOM_Programming
         #endregion
 
 
+        #region Other Methods
         // Load User From User Email Or Name
         private static async Task LoadUser(ClientContext ctx, string logonName)
         {
@@ -926,12 +931,68 @@ namespace CSOM_Programming
                 var user = ctx.Web.SiteUsers.GetByEmail(principal.Value.Email);
                 ctx.Load(user, u => u.LoginName,
                                u => u.Email,
-                               u => u.Id);
+                               u => u.Id,
+                               u => u.Title);
                 await ctx.ExecuteQueryAsync();
 
-                Console.WriteLine($"Id: {user.Id} \nEmail: {user.Email} \nLoginName: {user.LoginName}");
+                Console.WriteLine($"Id: {user.Id} \nTitle: {user.Title} \nEmail: {user.Email} \nLoginName: {user.LoginName}");
             }
             else Console.WriteLine($"User With Logon Name '{logonName}' Not Found!");
         }
+
+        // Load TaxonomyHiddenList Items
+        private static async Task GetTaxonomyHiddenListItems(ClientContext ctx)
+        {
+            List myList = ctx.Web.Lists.GetByTitle("TaxonomyHiddenList");
+
+            var items = myList.GetItems(CamlQuery.CreateAllItemsQuery());
+
+            ctx.Load(items, its => its.Include(it => it["ID"],
+                                               it => it["Title"],
+                                               it => it["IdForTerm"]));
+            await ctx.ExecuteQueryAsync();
+
+            foreach (var item in items)
+                Console.WriteLine($"ID: {item["ID"]} \tTitle: {item["Title"]} \tIdForTerm: {item["IdForTerm"]}");
+        }
+
+        // Load Site Users
+        private static async Task LoadSiteUsers(ClientContext ctx)
+        {
+            var users = ctx.Web.SiteUsers;
+            ctx.Load(users, us => us.Include(u => u.Id,
+                                             u => u.Title,
+                                             u => u.Email));
+            await ctx.ExecuteQueryAsync();
+
+            foreach (var user in users)
+                Console.WriteLine($"Id: {user.Id} \tTitle: {user.Title} \tEmail: {user.Email}");
+
+            Console.WriteLine($"\tTotal Users: {users.Count}");
+        }
+
+        // Remove Site Users That Was Deleted In Server
+        private static async Task RemoveDeletedUser(ClientContext ctx)
+        {
+            var users = ctx.Web.SiteUsers;
+            ctx.Load(users, us => us.Include(u => u.Email,
+                                             u => u.LoginName));
+            await ctx.ExecuteQueryAsync();
+
+            foreach (var user in users)
+            {
+                if (user.Email != "" && user.Email != "CSOMTest@HenoldMK.onmicrosoft.com")
+                {
+                    ClientResult<PrincipalInfo> principal = Utility.ResolvePrincipal(ctx, ctx.Web, user.Email, PrincipalType.User, PrincipalSource.All, ctx.Web.SiteUsers, true);
+                    await ctx.ExecuteQueryAsync();
+                    if (principal.Value == null)
+                    {
+                        users.RemoveByLoginName(user.LoginName);
+                        Console.WriteLine($"Successfully Deleted User With Login Name {user.LoginName}");
+                    }
+                }
+            }
+        }
+        #endregion
     }
 }

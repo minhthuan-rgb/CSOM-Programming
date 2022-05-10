@@ -183,7 +183,7 @@ namespace CSOM_Programming
 
             await ctx.ExecuteQueryAsync();
 
-            Console.WriteLine($"Successfully Created {list.Title} List!");
+            Console.WriteLine($"Successfully Created '{list.Title}' List!");
         }
 
         private static async Task AddContentTypeToList(ClientContext ctx, string title)
@@ -983,10 +983,11 @@ namespace CSOM_Programming
             {
                 if (user.Email != "" && user.Email != "CSOMTest@HenoldMK.onmicrosoft.com")
                 {
-                    ClientResult<PrincipalInfo> principal = Utility.ResolvePrincipal(ctx, ctx.Web, user.Email, PrincipalType.User, PrincipalSource.All, ctx.Web.SiteUsers, true);
+                    ClientResult<PrincipalInfo> principal = Utility.ResolvePrincipal(ctx, ctx.Web, user.Email, PrincipalType.User, PrincipalSource.All, users, true);
                     await ctx.ExecuteQueryAsync();
                     if (principal.Value == null)
                     {
+                        //ctx.Web.SiteUsers.RemoveByLoginName(user.LoginName);
                         users.RemoveByLoginName(user.LoginName);
                         Console.WriteLine($"Successfully Deleted User With Login Name {user.LoginName}");
                     }

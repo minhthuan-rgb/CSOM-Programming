@@ -29,123 +29,83 @@ namespace CSOM_Programming
                     Console.OutputEncoding = Encoding.UTF8;
                     Console.WriteLine($"Connected Site: {ctx.Web.Title}");
 
-                    // Create List "CSOM Test"
-                    //await CreateList(ctx, "Test", ListTemplateType.Announcements);
 
-                    // Delete List "CSOM Test"
-                    //await DeleteList(ctx, "CSOM Test");
+                    //await CreateList(ctx, "CSOM Test", ListTemplateType.Announcements); // Create List "CSOM Test"
 
-                    // Create Term Set And 2 Terms
-                    //await CreateTermSetAndTerms(ctx);
+                    //await CreateTermSetAndTerms(ctx); // Create Term Set And 2 Terms
 
-                    // Create 2 site fields: "about" type text and "city" type taxonomy
-                    //await CreateTextField(ctx, "about");
-                    //await CreateTaxonomyField(ctx, "city");
+                    //await CreateTextField(ctx, "about"); // Create site field "about" type text
+                    //await CreateTaxonomyField(ctx, "city"); // Create site field "city" type taxonomy
 
-                    // Create Content Type "CSOM Test content type"
-                    //await CreateContentType(ctx, "CSOM Test content type");
+                    //await CreateContentType(ctx, "CSOM Test content type"); // Create Content Type "CSOM Test content type"
 
-                    // Add Content Type To List "CSOM Test"
-                    //await AddContentTypeToList(ctx, "CSOM Test");
+                    //await AddContentTypeToList(ctx, "CSOM Test"); // Add Content Type To List "CSOM Test"
 
-                    // Add 2 Fields "about" And "city" To Content Type "CSOM Test content type"
-                    //await AddFieldsToContentType(ctx);
+                    //await AddFieldsToContentType(ctx); // Add 2 Fields "about" And "city" To Content Type "CSOM Test content type"
 
-                    // Set "CSOM Test content type" As Default Content Type In List "CSOM test"
-                    //await SetDefaultContentType(ctx, "CSOM Test");
+                    //await SetDefaultContentType(ctx, "CSOM Test"); // Set "CSOM Test content type" As Default Content Type In List "CSOM test"
 
-                    // Bind Taxonomy Field "city" To Term Set
-                    //await BindTaxonomyFieldToTermSet(ctx, "city");
+                    //await BindTaxonomyFieldToTermSet(ctx, "city"); // Bind Taxonomy Field "city" To Term Set
 
-                    // Display All Items List View
-                    //await DisplayAllItemsListView(ctx);
+                    //await DisplayAllItemsListView(ctx); // Display All Items List View
 
-                    // Add 5 Items To List "CSOM Test"
-                    //await AddItemsToList(ctx, 5);
+                    //await AddItemsToList(ctx, 5); // Add 5 Items To List "CSOM Test"
 
-                    // Set Default Value For "about" site field
-                    //await SetDefaultValueForAboutField(ctx);
+                    //await SetDefaultValueForAboutField(ctx); // Set Default Value For "about" site field
 
-                    // Add 2 Items With Default Value Of "about" site field
-                    //await AddItemsToList(ctx, 2, true);
+                    //await AddItemsToList(ctx, 2, true); // Add 2 Items With Default Value Of "about" site field
 
-                    // Set Default Value For "city" site field
-                    //await SetDefaultValueForCityField(ctx);
+                    //await SetDefaultValueForCityField(ctx); // Set Default Value For "city" site field
 
-                    // Add 2 Items With Default Value Of "city" site field
-                    //await AddItemsToList(ctx, 2, true, true);
+                    //await AddItemsToList(ctx, 2, true, true); // Add 2 Items With Default Value Of "city" site field
 
-                    // Get List Items Where Field "about" is not "about default"
-                    //await GetListItems(ctx);
+                    //await GetListItems(ctx); // Get List Items Where Field "about" is not "about default"
 
-                    // Create List View by CSOM 
-                    //await CreateListView(ctx);
+                    //await CreateListView(ctx); // Create List View by CSOM 
 
-                    // Update List View Items
-                    //await UpdateListItems(ctx);
+                    //await UpdateListItems(ctx); // Update List View Items
 
-                    // Create People Field In List "CSOM Test"
-                    //await CreatePeopleField(ctx);
+                    //await CreatePeopleField(ctx); // Create People Field In List "CSOM Test"
 
-                    // Migrate all list items to set user admin to field "author"
-                    //await SetUserAdminToAuthorField(ctx);
+                    //await SetUserAdminToAuthorField(ctx); // Migrate all list items to set user admin to field "author"
 
-                    // Create site field "cities" type taxonomy multi values
-                    //await CreateTaxonomyFieldMulti(ctx, "cities");
+                    //await CreateTaxonomyFieldMulti(ctx, "cities"); // Create site field "cities" type taxonomy multi values
 
-                    // Bind Taxonomy Field "cities" To Term Set
-                    //await BindTaxonomyFieldToTermSet(ctx, "cities");
+                    //await BindTaxonomyFieldToTermSet(ctx, "cities"); // Bind Taxonomy Field "cities" To Term Set
 
-                    // Add Field "cities" To Content Type "CSOM Test Content Type"
-                    //await AddCitiesFieldToContentType(ctx);
+                    //await AddCitiesFieldToContentType(ctx); // Add Field "cities" To Content Type "CSOM Test Content Type"
 
-                    // Add 3 Items With Field "Cities" Multi Value
-                    //await AddItemsToList(ctx, 3, true, true, true);
+                    //await AddItemsToList(ctx, 3, true, true, true); // Add 3 Items With Field "Cities" Multi Value
 
-                    // Display "cities" Field 
-                    //await DisplayCitiesField(ctx);
+                    //await DisplayCitiesField(ctx); // Display "cities" Field 
 
-                    // Create List "Document Test"
-                    //await CreateList(ctx, "Document Test", ListTemplateType.DocumentLibrary);
+                    //await CreateList(ctx, "Document Test", ListTemplateType.DocumentLibrary); // Create List "Document Test"
 
-                    // Add Content Type TO List "Document Test"
-                    //await AddContentTypeToList(ctx, "Document Test");
+                    //await AddContentTypeToList(ctx, "Document Test"); // Add Content Type TO List "Document Test"
 
-                    // Create Folders For List "Document Test"
-                    //await CreateFolders(ctx);
+                    //await CreateFolders(ctx); // Create Folders For List "Document Test"
 
-                    // Set "CSOM Test content type" As Default Content Type In List "Document Test"
-                    //await SetDefaultContentType(ctx, "Document Test");
+                    //await SetDefaultContentType(ctx, "Document Test"); // Set "CSOM Test content type" As Default Content Type In List "Document Test"
 
-                    // Add 3 Files In "Folder 2" With Value "Folder test" In Field "about"
-                    //await AddFilesInsideFolder(ctx, 3, "FolderTest");
+                    //await AddFilesInsideFolder(ctx, 3, "FolderTest"); // Add 3 Files In "Folder 2" With Value "Folder test" In Field "about"
 
-                    // Add 2 Files In "Folder 2" With Value "Stockholm" In Field "cities"
-                    //await AddFilesInsideFolder(ctx, 2, "CitiesTest", true);
+                    //await AddFilesInsideFolder(ctx, 2, "CitiesTest", true); // Add 2 Files In "Folder 2" With Value "Stockholm" In Field "cities"
 
-                    // Get All List Items Just In "Folder 2" And Have Value "Stockholm" in "cities" field
-                    //await GetListItemInFolderOnly(ctx);
+                    //await GetListItemInFolderOnly(ctx); // Get All List Items Just In "Folder 2" And Have Value "Stockholm" in "cities" field
 
-                    // Create List Item In "Document Test" By Upload A File Document.docx
-                    //await CreateListItemByUploadFile(ctx);
+                    //await CreateListItemByUploadFile(ctx); // Create List Item In "Document Test" By Upload A File Document.docx
 
-                    // Display All Documents List View
-                    //await DisplayAllDocumentsListView(ctx);
+                    //await DisplayAllDocumentsListView(ctx); // Display All Documents List View
 
-                    // Create Folder Structure View
-                    //await CreateFolderStructureView(ctx);
+                    //await CreateFolderStructureView(ctx); // Create Folder Structure View
 
-                    // Load User From User Email Or Name
-                    //await LoadUser(ctx, "59Tese");
+                    //await LoadUser(ctx, "59Tese"); // Load User From User Email Or Name
 
-                    // Load TaxonomyHiddenList Items
-                    //await GetTaxonomyHiddenListItems(ctx);
+                    //await GetTaxonomyHiddenListItems(ctx); // Load TaxonomyHiddenList Items
 
-                    // Load All Site Users
-                    //outawait LoadSiteUsers(ctx);
+                    //outawait LoadSiteUsers(ctx); // Load All Site Users
 
-                    // Remove Site Users That Was Deleted In Server
-                    //await RemoveDeletedUser(ctx);
+                    //await RemoveDeletedUser(ctx); // Remove Site Users That Was Deleted In Server
                 }
 
                 Console.WriteLine($"Press Any Key To Stop!");
@@ -255,26 +215,15 @@ namespace CSOM_Programming
                 var cityField = ctx.Web.Fields.GetByTitle("city");
 
                 var taxCityField = ctx.CastTo<TaxonomyField>(cityField);
-
-                taxCityField.SetFieldValueByValue(newItem, new TaxonomyFieldValue()
-                {
-                    WssId = -1,
-                    Label = "Stockholm",
-                    TermGuid = "9661521e-608d-42c5-83f6-e96c674a32db"
-                });
-
-                //var clientRuntimeContext = newItem.Context;
-                //var field = myList.Fields.GetByTitle("city");
-                //var taxCityField = clientRuntimeContext.CastTo<TaxonomyField>(field);
+                taxCityField.SetFieldValueByTerm(newItem, GetTermByName(ctx, "Stockholm"), 1033);
             }
 
             if (isMulti)
             {
                 var citiesField = ctx.Web.Fields.GetByTitle("cities");
-                var taxCitiesField = ctx.CastTo<TaxonomyField>(citiesField);
 
-                string fieldValues = "1;#Stockholm|9661521e-608d-42c5-83f6-e96c674a32db;#2;#Ho Chi Minh|8d6eea46-5de6-441c-9740-aca1928ba368";
-                taxCitiesField.SetFieldValueByValueCollection(newItem, new TaxonomyFieldValueCollection(ctx, fieldValues, taxCitiesField));
+                var taxCitiesField = ctx.CastTo<TaxonomyField>(citiesField);
+                taxCitiesField.SetFieldValueByTermCollection(newItem, GetAllTerms(ctx), 1033);
             }
 
             newItem.Update();
@@ -456,9 +405,7 @@ namespace CSOM_Programming
         {
             List myList = ctx.Web.Lists.GetByTitle("Document Test");
 
-            var folder = myList.RootFolder;
-            folder = folder.Folders.GetByUrl("Folder 1");
-            folder = folder.Folders.GetByUrl("Folder 2");
+            Folder folder = ctx.Web.GetFolderByServerRelativeUrl(ctx.Web.ServerRelativeUrl + "/Document%20Test/Folder%201/Folder%202");
 
             for (int i = 0; i < amount; i++)
                 await AddFileToFolder(ctx, $"{title}{i + 1}", folder, isCities);
@@ -498,8 +445,7 @@ namespace CSOM_Programming
                 var citiesField = ctx.Web.Fields.GetByTitle("cities");
                 var taxCitiesField = ctx.CastTo<TaxonomyField>(citiesField);
 
-                string fieldValues = "1;#Stockholm|9661521e-608d-42c5-83f6-e96c674a32db";
-                taxCitiesField.SetFieldValueByValueCollection(newItem, new TaxonomyFieldValueCollection(ctx, fieldValues, taxCitiesField));
+                taxCitiesField.SetFieldValueByTerm(newItem, GetTermByName(ctx, "Stockholm"), 1033);
             }
             else newItem["about"] = "Folder Test";
 
@@ -584,7 +530,7 @@ namespace CSOM_Programming
             creationInfo.ViewFields = commaSeparateColumnNames.Split(", ");
 
             View listView = views.Add(creationInfo);
-            listView.Scope = ViewScope.RecursiveAll;
+            listView.Scope = ViewScope.Recursive;
             listView.DefaultView = true;
             listView.Update();
 
@@ -616,6 +562,26 @@ namespace CSOM_Programming
             await ctx.ExecuteQueryAsync();
 
             Console.WriteLine("Finished!");
+        }
+
+        private static Term GetTermByName(ClientContext ctx, string termName)
+        {
+            TaxonomySession taxonomySession = TaxonomySession.GetTaxonomySession(ctx);
+            TermStore termStore = taxonomySession.GetDefaultSiteCollectionTermStore();
+            TermGroup termGroup = termStore.Groups.GetByName("Test");
+            TermSet termSet = termGroup.TermSets.GetByName("city-PhamMinhThuan");
+
+            return termSet.Terms.GetByName(termName);
+        }
+
+        private static TermCollection GetAllTerms(ClientContext ctx)
+        {
+            TaxonomySession taxonomySession = TaxonomySession.GetTaxonomySession(ctx);
+            TermStore termStore = taxonomySession.GetDefaultSiteCollectionTermStore();
+            TermGroup termGroup = termStore.Groups.GetByName("Test");
+            TermSet termSet = termGroup.TermSets.GetByName("city-PhamMinhThuan");
+
+            return termSet.GetAllTerms();
         }
         #endregion
 
@@ -707,12 +673,16 @@ namespace CSOM_Programming
         {
             Field field = ctx.Web.Fields.GetByTitle("city");
             TaxonomyField taxCityField = ctx.CastTo<TaxonomyField>(field);
-            taxCityField.DefaultValue = "2;#Ho Chi Minh|8d6eea46-5de6-441c-9740-aca1928ba368";
+            var term = GetTermByName(ctx, "Ho Chi Minh");
+            ctx.Load(term, t => t.Id, 
+                           t => t.Name);
+            await ctx.ExecuteQueryAsync();
+
+            taxCityField.DefaultValue = $"13;#{term.Name}|{term.Id}";
             taxCityField.UpdateAndPushChanges(true);
 
             ctx.Load(taxCityField, t => t.Title,
                             t => t.DefaultValue);
-
             await ctx.ExecuteQueryAsync();
 
             Console.WriteLine($"Successfully set '{taxCityField.Title}' site field default value to '{taxCityField.DefaultValue}'!");
@@ -879,10 +849,7 @@ namespace CSOM_Programming
         {
             List myList = ctx.Web.Lists.GetByTitle("Document Test");
 
-            //Folder folder = ctx.Web.GetFolderByServerRelativeUrl(ctx.Web.ServerRelativeUrl + "/Document%20Test/Folder%201/Folder%202");
-            var folder = myList.RootFolder;
-            folder = folder.Folders.GetByUrl("Folder 1");
-            folder = folder.Folders.GetByUrl("Folder 2");
+            Folder folder = ctx.Web.GetFolderByServerRelativeUrl(ctx.Web.ServerRelativeUrl + "/Document%20Test/Folder%201/Folder%202");
             ctx.Load(folder, f => f.ServerRelativeUrl);
             await ctx.ExecuteQueryAsync();
 

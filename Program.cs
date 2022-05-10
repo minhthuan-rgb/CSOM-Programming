@@ -530,7 +530,7 @@ namespace CSOM_Programming
             creationInfo.ViewFields = commaSeparateColumnNames.Split(", ");
 
             View listView = views.Add(creationInfo);
-            listView.Scope = ViewScope.Recursive;
+            listView.Scope = ViewScope.DefaultValue;
             listView.DefaultView = true;
             listView.Update();
 
@@ -678,7 +678,7 @@ namespace CSOM_Programming
                            t => t.Name);
             await ctx.ExecuteQueryAsync();
 
-            taxCityField.DefaultValue = $"13;#{term.Name}|{term.Id}";
+            taxCityField.DefaultValue = $"-1;#{term.Name}|{term.Id}";
             taxCityField.UpdateAndPushChanges(true);
 
             ctx.Load(taxCityField, t => t.Title,

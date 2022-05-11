@@ -99,12 +99,12 @@ namespace CSOM_Programming
                     //await DisplayAllDocumentsListView(ctx); // Display All Documents List View
 
                     //await CreateFolderStructureView(ctx); // Create Folder Structure View
-
-                    //await LoadUser(ctx, "59Tese"); // Load User From User Email Or Name
+                    
+                    await LoadUser(ctx, "user.test"); // Load User From User Email Or Name
 
                     //await GetTaxonomyHiddenListItems(ctx); // Load TaxonomyHiddenList Items
 
-                    //outawait LoadSiteUsers(ctx); // Load All Site Users
+                    //await LoadSiteUsers(ctx); // Load All Site Users
 
                     //await RemoveDeletedUser(ctx); // Remove Site Users That Was Deleted In Server
                     #endregion
@@ -130,7 +130,7 @@ namespace CSOM_Programming
                     //await AddUserToSecurityGroup(ctx, "thao.pham.nguyen.phuong", "Test Group");
                     //await AddUserToSecurityGroup(ctx, "thien.pham.minh", "Test Group");
 
-                    await CheckInheritedPermissionLevel(ctx); // Check That Permission Level Of Group Has Been Inherited From The Root Site
+                    //await CheckInheritedPermissionLevel(ctx); // Check That Permission Level Of Group Has Been Inherited From The Root Site
                     #endregion
 
                 }
@@ -994,8 +994,8 @@ namespace CSOM_Programming
                     await ctx.ExecuteQueryAsync();
                     if (principal.Value == null)
                     {
-                        //ctx.Web.SiteUsers.RemoveByLoginName(user.LoginName);
                         users.RemoveByLoginName(user.LoginName);
+                        await ctx.ExecuteQueryAsync();
                         Console.WriteLine($"Successfully Deleted User With Login Name {user.LoginName}");
                     }
                 }
@@ -1166,6 +1166,53 @@ namespace CSOM_Programming
                     return;
                 }
         }
+
+        private static async Task AddUserToSecurityGroup(ClientContext ctx, string logonName, string groupName)
+        {
+            Group group = ctx.Web.SiteGroups.GetByName(groupName);
+            ctx.Load(group, g => g.Title);
+
+            User user = ctx.Web.EnsureUser(logonName);
+            ctx.Load(user, u => u.Email,
+                           u => u.LoginName,
+                           u => u.Title);
+            await ctx.ExecuteQueryAsync();
+
+            User addedUser = group.Users.Add(new UserCreationInformation()
+            {
+                Email = user.Email,
+                LoginName = user.LoginName,
+                Title = user.Title
+            });
+
+            ctx.Load(addedUser, u => u.Email);
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine($"Successfully Added User '{addedUser.Email}' To Group {group.Title}");
+        }
+
+        private static async Task CheckInheritedPermissionLevel(ClientContext ctx)
+        {
+            Web subSite = await GetSubsite(ctx, "Finance And Accounting");
+
+            Group myGroup = subSite.SiteGroups.GetByName("Test Group");
+            ctx.Load(myGroup, g => g.Title);
+
+            var res = subSite.RoleAssignments.GetByPrincipal(myGroup);
+            var roles = res.RoleDefinitionBindings;
+            ctx.Load(roles, rs => rs.Include(r => r.Name));
+            await ctx.ExecuteQueryAsync();
+
+            foreach(var role in roles)
+                if (role.Name.Equals("Test Level"))
+                {
+                    Console.WriteLine($"'{role.Name}' Has Been Inherited From The Root Site For The Security Group '{myGroup.Title}'");
+                    return;
+                }
+        }
+        #endregion
+
+
         #endregion
 
 

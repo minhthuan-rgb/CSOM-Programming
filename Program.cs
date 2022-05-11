@@ -59,7 +59,7 @@ namespace CSOM_Programming
 
                     //await AddItemsToList(ctx, 2, true, true); // Add 2 Items With Default Value Of "city" site field
 
-                    //await GetListItems(ctx); // Get List Items Where Field "about" is not "about default"
+                    ////await GetListItems(ctx); // Get List Items Where Field "about" is not "about default"
 
                     //await CreateListView(ctx); // Create List View by CSOM 
 
@@ -89,7 +89,7 @@ namespace CSOM_Programming
 
                     //await AddFilesInsideFolder(ctx, 3, "FolderTest"); // Add 3 Files In "Folder 2" With Value "Folder test" In Field "about"
 
-                    //await AddFilesInsideFolder(ctx, 2, "CitiesTest", true); // Add 2 Files In "Folder 2" With Value "Stockholm" In Field "cities"
+                    await AddFilesInsideFolder(ctx, 2, "CitiesTest", true); // Add 2 Files In "Folder 2" With Value "Stockholm" In Field "cities"
 
                     //await GetListItemInFolderOnly(ctx); // Get All List Items Just In "Folder 2" And Have Value "Stockholm" in "cities" field
 
@@ -439,6 +439,7 @@ namespace CSOM_Programming
             ContentType contentType = contentTypes.First(c => c.Name.Equals("CSOM Test content type"));
             var newItem = addedFile.ListItemAllFields;
             newItem["ContentTypeId"] = contentType.Id;
+            newItem.Update();
 
             if (isCities)
             {
@@ -678,7 +679,16 @@ namespace CSOM_Programming
                            t => t.Name);
             await ctx.ExecuteQueryAsync();
 
-            taxCityField.DefaultValue = $"-1;#{term.Name}|{term.Id}";
+            TaxonomyFieldValue taxonomyFieldValue = new TaxonomyFieldValue()
+            {
+                WssId = -1,
+                Label = term.Name,
+                TermGuid  = term.Id.ToString()
+            };
+            ClientResult<string> value = taxCityField.GetValidatedString(taxonomyFieldValue);
+            await ctx.ExecuteQueryAsync();
+
+            taxCityField.DefaultValue = value.Value;
             taxCityField.UpdateAndPushChanges(true);
 
             ctx.Load(taxCityField, t => t.Title,

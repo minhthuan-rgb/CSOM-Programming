@@ -30,6 +30,7 @@ namespace CSOM_Programming
                     Console.WriteLine($"Connected Site: {ctx.Web.Title}");
 
 
+                    #region CSOM Programming
                     //await CreateList(ctx, "CSOM Test", ListTemplateType.Announcements); // Create List "CSOM Test"
 
                     //await CreateTermSetAndTerms(ctx); // Create Term Set And 2 Terms
@@ -89,7 +90,7 @@ namespace CSOM_Programming
 
                     //await AddFilesInsideFolder(ctx, 3, "FolderTest"); // Add 3 Files In "Folder 2" With Value "Folder test" In Field "about"
 
-                    await AddFilesInsideFolder(ctx, 2, "CitiesTest", true); // Add 2 Files In "Folder 2" With Value "Stockholm" In Field "cities"
+                    //await AddFilesInsideFolder(ctx, 2, "CitiesTest", true); // Add 2 Files In "Folder 2" With Value "Stockholm" In Field "cities"
 
                     //await GetListItemInFolderOnly(ctx); // Get All List Items Just In "Folder 2" And Have Value "Stockholm" in "cities" field
 
@@ -106,6 +107,32 @@ namespace CSOM_Programming
                     //outawait LoadSiteUsers(ctx); // Load All Site Users
 
                     //await RemoveDeletedUser(ctx); // Remove Site Users That Was Deleted In Server
+                    #endregion
+
+
+                    #region Permissions
+                    //await CreateSubSite(ctx); // Create Subsite "Finance And Accounting"
+
+                    //await CreateListAtSubsite(ctx, "Accounts", ListTemplateType.Announcements); // Create List "Accounts" at subsite
+
+                    //await StopInheritingPermissions(ctx); // Stop Inheriting Permissions In List "Account"
+
+                    //await GrantDesignPermissionForUser(ctx, "thien.pham.minh"); // Grant "Design" Permission For A User
+
+                    //await DeleteUniquePermissions(ctx); // Re-establish Inheritance In List "Account"
+
+                    //await CreateCustomPermissionLevel(ctx); // Create Custom Permission Level
+
+                    //await CreateCustomSecurityGroup(ctx); // Create Custom Secure Group
+
+                    // Add 3 Users To Custom Security Group
+                    //await AddUserToSecurityGroup(ctx, "thanh.pham.minh", "Test Group");
+                    //await AddUserToSecurityGroup(ctx, "thao.pham.nguyen.phuong", "Test Group");
+                    //await AddUserToSecurityGroup(ctx, "thien.pham.minh", "Test Group");
+
+                    await CheckInheritedPermissionLevel(ctx); // Check That Permission Level Of Group Has Been Inherited From The Root Site
+                    #endregion
+
                 }
 
                 Console.WriteLine($"Press Any Key To Stop!");
@@ -130,12 +157,15 @@ namespace CSOM_Programming
 
 
         #region List
-        private static async Task CreateList(ClientContext ctx, string title, ListTemplateType type)
+        private static async Task CreateList(ClientContext ctx, string title, ListTemplateType type, Web web = null)
         {
             var creationInfo = new ListCreationInformation();
             creationInfo.Title = title;
             creationInfo.TemplateType = (int)type;
-            List list = ctx.Web.Lists.Add(creationInfo);
+            List list = null;
+            if (web == null)
+                list = ctx.Web.Lists.Add(creationInfo);
+            else list = web.Lists.Add(creationInfo);
 
             list.Description = $"This is {title} List, that was created from client side";
             list.OnQuickLaunch = true;
@@ -675,7 +705,7 @@ namespace CSOM_Programming
             Field field = ctx.Web.Fields.GetByTitle("city");
             TaxonomyField taxCityField = ctx.CastTo<TaxonomyField>(field);
             var term = GetTermByName(ctx, "Ho Chi Minh");
-            ctx.Load(term, t => t.Id, 
+            ctx.Load(term, t => t.Id,
                            t => t.Name);
             await ctx.ExecuteQueryAsync();
 
@@ -683,7 +713,7 @@ namespace CSOM_Programming
             {
                 WssId = -1,
                 Label = term.Name,
-                TermGuid  = term.Id.ToString()
+                TermGuid = term.Id.ToString()
             };
             ClientResult<string> value = taxCityField.GetValidatedString(taxonomyFieldValue);
             await ctx.ExecuteQueryAsync();
@@ -971,6 +1001,174 @@ namespace CSOM_Programming
                 }
             }
         }
+        #endregion
+
+
+        #region Permission
+
+
+        #region Exercise 3
+        private static async Task CreateSubSite(ClientContext ctx)
+        {
+            var creationInfo = new WebCreationInformation();
+            creationInfo.Url = "FinanceAndAccounting";
+            creationInfo.Title = "Finance And Accounting";
+            creationInfo.Description = "Finance And Accounting subsite for Permission exercise";
+            creationInfo.UseSamePermissionsAsParentSite = true;
+            creationInfo.WebTemplate = "STS#3";
+            creationInfo.Language = 1033;
+
+            Web web = ctx.Web.Webs.Add(creationInfo);
+            ctx.Load(web, w => w.Title,
+                          w => w.Url,
+                          web => web.Description);
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine($"Subsite Information:\n Title: {web.Title}\n URL: {web.Url}\n Description: {web.Description}");
+        }
+
+        private static async Task CreateListAtSubsite(ClientContext ctx, string title, ListTemplateType type)
+        {
+            await CreateList(ctx, title, type, await GetSubsite(ctx, "Finance And Accounting"));
+        }
+
+        private static async Task<Web> GetSubsite(ClientContext ctx, string title)
+        {
+            WebCollection webs = ctx.Web.Webs;
+            ctx.Load(webs, ws => ws.Include(w => w.Title));
+            await ctx.ExecuteQueryAsync();
+
+            return webs.FirstOrDefault(w => w.Title.Equals(title));
+        }
+
+        private static async Task StopInheritingPermissions(ClientContext ctx)
+        {
+            Web subSite = await GetSubsite(ctx, "Finance And Accounting");
+
+            List myList = subSite.Lists.GetByTitle("Accounts");
+            myList.BreakRoleInheritance(false, false);
+            myList.Update();
+
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine($"Finished! Stop Inheriting Permission From Its Parent!");
+        }
+
+        private static async Task GrantDesignPermissionForUser(ClientContext ctx, string userEmail)
+        {
+            Web subSite = await GetSubsite(ctx, "Finance And Accounting");
+
+            List myList = subSite.Lists.GetByTitle("Accounts");
+            var listRoleDefinitionBinding = new RoleDefinitionBindingCollection(ctx);
+            listRoleDefinitionBinding.Add(ctx.Web.RoleDefinitions.GetByType(RoleType.WebDesigner));
+            User user = ctx.Web.EnsureUser(userEmail);
+            myList.RoleAssignments.Add(user, listRoleDefinitionBinding);
+
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine("Finished!");
+        }
+
+        private static async Task DeleteUniquePermissions(ClientContext ctx)
+        {
+            Web subSite = await GetSubsite(ctx, "Finance And Accounting");
+
+            List myList = subSite.Lists.GetByTitle("Accounts");
+            myList.ResetRoleInheritance();
+            myList.Update();
+
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine($"Finished! Re-establish Inheritance!");
+        }
+        #endregion
+
+
+        #region Exercise 4
+        private static async Task CreateCustomPermissionLevel(ClientContext ctx)
+        {
+            var roleDefinitions = ctx.Web.RoleDefinitions;
+
+            BasePermissions basePermissions = new BasePermissions();
+            basePermissions.Set(PermissionKind.ManageLists);
+            basePermissions.Set(PermissionKind.CreateAlerts);
+            
+            var creationInfo = new RoleDefinitionCreationInformation();
+            creationInfo.Name = "Test Level";
+            creationInfo.Description = "Custom Permission Level 'Test', granted 'manage lists' and 'create alerts' permissions";
+            creationInfo.BasePermissions = basePermissions;
+
+            var roleDefinition = roleDefinitions.Add(creationInfo);
+            ctx.Load(roleDefinition, r => r.Name,
+                                     r => r.Description);
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine($"Successfully Created Custom Permission Level\n Name: {roleDefinition.Name}\n Description: {roleDefinition.Description}");
+        }
+
+        private static async Task CreateCustomSecurityGroup(ClientContext ctx)
+        {
+            var creationInfo = new GroupCreationInformation();
+            creationInfo.Title = "Test Group";
+            Group group = ctx.Web.SiteGroups.Add(creationInfo);
+            
+            await ctx.ExecuteQueryAsync();
+
+            var siteRoleDefinitionBinding = new RoleDefinitionBindingCollection(ctx);
+            siteRoleDefinitionBinding.Add(ctx.Web.RoleDefinitions.GetByName("Test Level"));
+            ctx.Web.RoleAssignments.Add(group, siteRoleDefinitionBinding);
+
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine("Finished!");
+        }
+
+        private static async Task AddUserToSecurityGroup(ClientContext ctx, string logonName, string groupName)
+        {
+            Group group = ctx.Web.SiteGroups.GetByName(groupName);
+            ctx.Load(group, g => g.Title);
+
+            User user = ctx.Web.EnsureUser(logonName);
+            ctx.Load(user, u => u.Email,
+                           u => u.LoginName,
+                           u => u.Title);
+            await ctx.ExecuteQueryAsync();
+
+            User addedUser = group.Users.Add(new UserCreationInformation()
+            {
+                Email = user.Email,
+                LoginName = user.LoginName,
+                Title = user.Title
+            });
+
+            ctx.Load(addedUser, u => u.Email);
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine($"Successfully Added User '{addedUser.Email}' To Group {group.Title}");
+        }
+
+        private static async Task CheckInheritedPermissionLevel(ClientContext ctx)
+        {
+            Web subSite = await GetSubsite(ctx, "Finance And Accounting");
+
+            Group myGroup = subSite.SiteGroups.GetByName("Test Group");
+            ctx.Load(myGroup, g => g.Title);
+
+            var res = subSite.RoleAssignments.GetByPrincipal(myGroup);
+            var roles = res.RoleDefinitionBindings;
+            ctx.Load(roles, rs => rs.Include(r => r.Name));
+            await ctx.ExecuteQueryAsync();
+
+            foreach(var role in roles)
+                if (role.Name.Equals("Test Level"))
+                {
+                    Console.WriteLine($"'{role.Name}' Has Been Inherited From The Root Site For The Security Group '{myGroup.Title}'");
+                    return;
+                }
+        }
+        #endregion
+
+
         #endregion
     }
 }

@@ -99,8 +99,8 @@ namespace CSOM_Programming
                     //await DisplayAllDocumentsListView(ctx); // Display All Documents List View
 
                     //await CreateFolderStructureView(ctx); // Create Folder Structure View
-                    
-                    await LoadUser(ctx, "user.test"); // Load User From User Email Or Name
+
+                    //await LoadUser(ctx, "user.test"); // Load User From User Email Or Name
 
                     //await GetTaxonomyHiddenListItems(ctx); // Load TaxonomyHiddenList Items
 
@@ -117,7 +117,7 @@ namespace CSOM_Programming
 
                     //await StopInheritingPermissions(ctx); // Stop Inheriting Permissions In List "Account"
 
-                    //await GrantDesignPermissionForUser(ctx, "thien.pham.minh"); // Grant "Design" Permission For A User
+                    await GrantDesignPermissionForUser(ctx, "thien.pham.minh", RoleType.WebDesigner); // Grant "Design" Permission For A User
 
                     //await DeleteUniquePermissions(ctx); // Re-establish Inheritance In List "Account"
 
@@ -1046,27 +1046,44 @@ namespace CSOM_Programming
             Web subSite = await GetSubsite(ctx, "Finance And Accounting");
 
             List myList = subSite.Lists.GetByTitle("Accounts");
-            myList.BreakRoleInheritance(false, false);
-            myList.Update();
-
+            ctx.Load(myList, ml => ml.HasUniqueRoleAssignments,
+                             ml => ml.Title);
             await ctx.ExecuteQueryAsync();
 
-            Console.WriteLine($"Finished! Stop Inheriting Permission From Its Parent!");
+            if (!myList.HasUniqueRoleAssignments)
+            {
+                myList.BreakRoleInheritance(false, false);
+                myList.Update();
+
+                await ctx.ExecuteQueryAsync();
+
+                Console.WriteLine($"Finished! Stop Inheriting Permission From Its Parent!");
+            }
+            else Console.WriteLine($"List {myList.Title} Already Has Unique Permissions!");
         }
 
-        private static async Task GrantDesignPermissionForUser(ClientContext ctx, string userEmail)
+        private static async Task GrantDesignPermissionForUser(ClientContext ctx, string logonName, RoleType roleType)
         {
             Web subSite = await GetSubsite(ctx, "Finance And Accounting");
 
             List myList = subSite.Lists.GetByTitle("Accounts");
-            var listRoleDefinitionBinding = new RoleDefinitionBindingCollection(ctx);
-            listRoleDefinitionBinding.Add(ctx.Web.RoleDefinitions.GetByType(RoleType.WebDesigner));
-            User user = ctx.Web.EnsureUser(userEmail);
-            myList.RoleAssignments.Add(user, listRoleDefinitionBinding);
-
+            ctx.Load(myList, ml => ml.HasUniqueRoleAssignments,
+                             ml => ml.Title);
             await ctx.ExecuteQueryAsync();
 
-            Console.WriteLine("Finished!");
+            if (myList.HasUniqueRoleAssignments)
+            {
+                var listRoleDefinitionBinding = new RoleDefinitionBindingCollection(ctx);
+                listRoleDefinitionBinding.Add(ctx.Web.RoleDefinitions.GetByType(roleType));
+                User user = ctx.Web.EnsureUser(logonName);
+
+                myList.RoleAssignments.Add(user, listRoleDefinitionBinding);
+
+                await ctx.ExecuteQueryAsync();
+
+                Console.WriteLine("Finished!");
+            }
+            else Console.WriteLine($"List '{myList.Title}' Doesn't Have Uniqe Permission!");
         }
 
         private static async Task DeleteUniquePermissions(ClientContext ctx)
@@ -1074,12 +1091,20 @@ namespace CSOM_Programming
             Web subSite = await GetSubsite(ctx, "Finance And Accounting");
 
             List myList = subSite.Lists.GetByTitle("Accounts");
-            myList.ResetRoleInheritance();
-            myList.Update();
-
+            ctx.Load(myList, ml => ml.HasUniqueRoleAssignments,
+                             ml => ml.Title);
             await ctx.ExecuteQueryAsync();
 
-            Console.WriteLine($"Finished! Re-establish Inheritance!");
+            if (myList.HasUniqueRoleAssignments)
+            {
+                myList.ResetRoleInheritance();
+                myList.Update();
+
+                await ctx.ExecuteQueryAsync();
+
+                Console.WriteLine($"Finished! Re-establish Inheritance!");
+            }
+            else Console.WriteLine($"List {myList.Title} Already Has Inherited Permissions From Its Parent!");
         }
         #endregion
 

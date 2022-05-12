@@ -117,7 +117,7 @@ namespace CSOM_Programming
 
                     //await StopInheritingPermissions(ctx); // Stop Inheriting Permissions In List "Account"
 
-                    await GrantDesignPermissionForUser(ctx, "thien.pham.minh", RoleType.WebDesigner); // Grant "Design" Permission For A User
+                    //await GrantDesignPermissionForUser(ctx, "thien.pham.minh", RoleType.WebDesigner); // Grant "Design" Permission For A User
 
                     //await DeleteUniquePermissions(ctx); // Re-establish Inheritance In List "Account"
 
@@ -126,9 +126,9 @@ namespace CSOM_Programming
                     //await CreateCustomSecurityGroup(ctx); // Create Custom Secure Group
 
                     //Add 3 Users To Custom Security Group
-                    //await AddUserToSecurityGroup(ctx, "thanh.pham.minh", "Test Group");
-                    //await AddUserToSecurityGroup(ctx, "thao.pham.nguyen.phuong", "Test Group");
-                    //await AddUserToSecurityGroup(ctx, "thien.pham.minh", "Test Group");
+                    await AddUserToSecurityGroup(ctx, "thanh.pham.minh", "Test Group");
+                    await AddUserToSecurityGroup(ctx, "thao.pham.nguyen.phuong", "Test Group");
+                    await AddUserToSecurityGroup(ctx, "thien.pham.minh", "Test Group");
 
                     //await CheckInheritedPermissionLevel(ctx); // Check That Permission Level Of Group Has Been Inherited From The Root Site
                     #endregion
@@ -159,6 +159,9 @@ namespace CSOM_Programming
         #region List
         private static async Task CreateList(ClientContext ctx, string title, ListTemplateType type, Web web = null)
         {
+            List temp = web.Lists.GetByTitle(title);
+            if (temp != null)
+                throw new Exception($"List '{title}' Has Existed!");
             var creationInfo = new ListCreationInformation();
             creationInfo.Title = title;
             creationInfo.TemplateType = (int)type;
@@ -167,7 +170,7 @@ namespace CSOM_Programming
                 list = ctx.Web.Lists.Add(creationInfo);
             else list = web.Lists.Add(creationInfo);
 
-            list.Description = $"This is {title} List, that was created from client side";
+            list.Description = $"This Is {title} List, That Was Created From Client Side";
             list.OnQuickLaunch = true;
             list.Update();
 
@@ -267,17 +270,10 @@ namespace CSOM_Programming
             List myList = ctx.Web.Lists.GetByTitle("CSOM Test");
             ctx.Load(myList, ml => ml.Title);
 
-            ViewCollection views = myList.Views;
-            ctx.Load(views, vs => vs.Include(v => v.Title));
-            await ctx.ExecuteQueryAsync();
-
-            View temp = views.FirstOrDefault(view => view.Title.Equals("CSOM Test View"));
+            View temp = myList.Views.GetByTitle("CSOM Test View");
 
             if (temp != null)
-            {
-                Console.WriteLine($"List View '{temp.Title}' has existed!");
-                return;
-            }
+                throw new Exception($"List View 'CSOM Test View' Has Existed!");
 
             var creationInfo = new ViewCreationInformation();
             creationInfo.Title = "CSOM Test View";
@@ -295,7 +291,7 @@ namespace CSOM_Programming
             string commaSeparateColumnNames = "ID, Title, about, city, Created";
             creationInfo.ViewFields = commaSeparateColumnNames.Split(", ");
 
-            View listView = views.Add(creationInfo);
+            View listView = myList.Views.Add(creationInfo);
             ctx.Load(listView, l => l.Title);
 
             await ctx.ExecuteQueryAsync();
@@ -335,7 +331,7 @@ namespace CSOM_Programming
 
             await ctx.ExecuteQueryAsync();
 
-            Console.WriteLine($"Successfully Add 'cities' Field To List View '{allItemsView.Title}' For List '{myList.Title}'!");
+            Console.WriteLine($"Successfully Added 'cities' Field To List View '{allItemsView.Title}' For List '{myList.Title}'!");
         }
 
         private static async Task<View> GetListView(ClientContext ctx, List list, string title)
@@ -454,10 +450,8 @@ namespace CSOM_Programming
             var temp = files.FirstOrDefault(f => f.Name.Equals($"{title}.docx"));
 
             if (temp != null)
-            {
-                Console.WriteLine($"'{title}.docx' has existed!");
-                return;
-            }
+                throw new Exception($"'{title}.docx' Has Existed!");
+
             var creationInfo = new FileCreationInformation()
             {
                 Content = Encoding.ASCII.GetBytes("Folder test"),
@@ -544,10 +538,8 @@ namespace CSOM_Programming
             View temp = views.FirstOrDefault(view => view.Title.Equals("Folders"));
 
             if (temp != null)
-            {
-                Console.WriteLine($"List View '{temp.Title}' has existed!");
-                return;
-            }
+                throw new Exception($"List View '{temp.Title}' Has Existed!");
+
             var creationInfo = new ViewCreationInformation();
             creationInfo.Title = "Folders";
             creationInfo.ViewTypeKind = ViewType.Html;
@@ -697,7 +689,7 @@ namespace CSOM_Programming
 
             await ctx.ExecuteQueryAsync();
 
-            Console.WriteLine($"Successfully set '{field.Title}' site field default value to '{field.DefaultValue}'!");
+            Console.WriteLine($"Successfully Set '{field.Title}' Site Field Default Value To '{field.DefaultValue}'!");
         }
 
         private static async Task SetDefaultValueForCityField(ClientContext ctx)
@@ -725,7 +717,7 @@ namespace CSOM_Programming
                             t => t.DefaultValue);
             await ctx.ExecuteQueryAsync();
 
-            Console.WriteLine($"Successfully set '{taxCityField.Title}' site field default value to '{taxCityField.DefaultValue}'!");
+            Console.WriteLine($"Successfully Set '{taxCityField.Title}' Site Field Default Value To '{taxCityField.DefaultValue}'!");
         }
         #endregion
 
@@ -739,10 +731,7 @@ namespace CSOM_Programming
 
             ContentType temp = contentTypes.FirstOrDefault(c => c.Name.Equals(name));
             if (temp != null)
-            {
-                Console.WriteLine($"Content type name '{name}' has existed!");
-                return;
-            }
+                throw new Exception($"Content Type Name '{name}' Has Existed!");
 
             var creationInfo = new ContentTypeCreationInformation();
             creationInfo.Name = name;
@@ -756,7 +745,7 @@ namespace CSOM_Programming
 
             await ctx.ExecuteQueryAsync();
 
-            Console.WriteLine($"Successfully Created {myContentType.Name} with ID {myContentType.Id}!");
+            Console.WriteLine($"Successfully Created '{myContentType.Name}' With ID '{myContentType.Id}'!");
         }
 
         private static async Task AddFieldsToContentType(ClientContext ctx)
@@ -944,7 +933,7 @@ namespace CSOM_Programming
 
                 Console.WriteLine($"Id: {user.Id} \nTitle: {user.Title} \nEmail: {user.Email} \nLoginName: {user.LoginName}");
             }
-            else Console.WriteLine($"User With Logon Name '{logonName}' Not Found!");
+            else throw new Exception($"User With Logon Name '{logonName}' Not Found!");
         }
 
         // Load TaxonomyHiddenList Items
@@ -1059,7 +1048,7 @@ namespace CSOM_Programming
 
                 Console.WriteLine($"Finished! Stop Inheriting Permission From Its Parent!");
             }
-            else Console.WriteLine($"List {myList.Title} Already Has Unique Permissions!");
+            else throw new Exception($"List {myList.Title} Already Has Unique Permissions!");
         }
 
         private static async Task GrantDesignPermissionForUser(ClientContext ctx, string logonName, RoleType roleType)
@@ -1073,17 +1062,43 @@ namespace CSOM_Programming
 
             if (myList.HasUniqueRoleAssignments)
             {
-                var listRoleDefinitionBinding = new RoleDefinitionBindingCollection(ctx);
-                listRoleDefinitionBinding.Add(ctx.Web.RoleDefinitions.GetByType(roleType));
                 User user = ctx.Web.EnsureUser(logonName);
+                ctx.Load(user, u => u.Email);
 
-                myList.RoleAssignments.Add(user, listRoleDefinitionBinding);
+                try
+                {
+                    var listRoleDefinitionBinding = new RoleDefinitionBindingCollection(ctx);
+                    listRoleDefinitionBinding.Add(ctx.Web.RoleDefinitions.GetByType(roleType));
 
-                await ctx.ExecuteQueryAsync();
+                    var roleAssignment = myList.RoleAssignments.GetByPrincipal(user);
+                    ctx.Load(roleAssignment, r => r.RoleDefinitionBindings);
 
-                Console.WriteLine("Finished!");
+                    await ctx.ExecuteQueryAsync();
+
+                    var roleDefinition = roleAssignment.RoleDefinitionBindings.FirstOrDefault(r => r.RoleTypeKind.Equals(roleType));
+                    if (roleDefinition == null)
+                    {
+                        myList.RoleAssignments.Add(user, listRoleDefinitionBinding);
+
+                        await ctx.ExecuteQueryAsync();
+
+                        Console.WriteLine("Finished!");
+                    }
+                    else throw new Exception($"User '{user.Email}' Already Have This Permission!");
+                }
+                catch (ServerException)
+                {
+                    var listRoleDefinitionBinding = new RoleDefinitionBindingCollection(ctx);
+                    listRoleDefinitionBinding.Add(ctx.Web.RoleDefinitions.GetByType(roleType));
+
+                    myList.RoleAssignments.Add(user, listRoleDefinitionBinding);
+
+                    await ctx.ExecuteQueryAsync();
+
+                    Console.WriteLine("Finished!");
+                }
             }
-            else Console.WriteLine($"List '{myList.Title}' Doesn't Have Uniqe Permission!");
+            else throw new Exception($"List '{myList.Title}' Doesn't Have Uniqe Permission!");
         }
 
         private static async Task DeleteUniquePermissions(ClientContext ctx)
@@ -1104,7 +1119,7 @@ namespace CSOM_Programming
 
                 Console.WriteLine($"Finished! Re-establish Inheritance!");
             }
-            else Console.WriteLine($"List {myList.Title} Already Has Inherited Permissions From Its Parent!");
+            else throw new Exception($"List {myList.Title} Already Has Inherited Permissions From Its Parent!");
         }
         #endregion
 
@@ -1112,8 +1127,6 @@ namespace CSOM_Programming
         #region Exercise 4
         private static async Task CreateCustomPermissionLevel(ClientContext ctx)
         {
-            var roleDefinitions = ctx.Web.RoleDefinitions;
-
             BasePermissions basePermissions = new BasePermissions();
             basePermissions.Set(PermissionKind.ManageLists);
             basePermissions.Set(PermissionKind.CreateAlerts);
@@ -1123,7 +1136,7 @@ namespace CSOM_Programming
             creationInfo.Description = "Custom Permission Level 'Test', granted 'manage lists' and 'create alerts' permissions";
             creationInfo.BasePermissions = basePermissions;
 
-            var roleDefinition = roleDefinitions.Add(creationInfo);
+            var roleDefinition = ctx.Web.RoleDefinitions.Add(creationInfo);
             ctx.Load(roleDefinition, r => r.Name,
                                      r => r.Description);
             await ctx.ExecuteQueryAsync();
@@ -1165,8 +1178,8 @@ namespace CSOM_Programming
                 LoginName = user.LoginName,
                 Title = user.Title
             });
-
             ctx.Load(addedUser, u => u.Email);
+
             await ctx.ExecuteQueryAsync();
 
             Console.WriteLine($"Successfully Added User '{addedUser.Email}' To Group {group.Title}");

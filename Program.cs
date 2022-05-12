@@ -125,7 +125,7 @@ namespace CSOM_Programming
 
                     //await CreateCustomSecurityGroup(ctx); // Create Custom Secure Group
 
-                    // Add 3 Users To Custom Security Group
+                    //Add 3 Users To Custom Security Group
                     //await AddUserToSecurityGroup(ctx, "thanh.pham.minh", "Test Group");
                     //await AddUserToSecurityGroup(ctx, "thao.pham.nguyen.phuong", "Test Group");
                     //await AddUserToSecurityGroup(ctx, "thien.pham.minh", "Test Group");
@@ -1166,53 +1166,6 @@ namespace CSOM_Programming
                     return;
                 }
         }
-
-        private static async Task AddUserToSecurityGroup(ClientContext ctx, string logonName, string groupName)
-        {
-            Group group = ctx.Web.SiteGroups.GetByName(groupName);
-            ctx.Load(group, g => g.Title);
-
-            User user = ctx.Web.EnsureUser(logonName);
-            ctx.Load(user, u => u.Email,
-                           u => u.LoginName,
-                           u => u.Title);
-            await ctx.ExecuteQueryAsync();
-
-            User addedUser = group.Users.Add(new UserCreationInformation()
-            {
-                Email = user.Email,
-                LoginName = user.LoginName,
-                Title = user.Title
-            });
-
-            ctx.Load(addedUser, u => u.Email);
-            await ctx.ExecuteQueryAsync();
-
-            Console.WriteLine($"Successfully Added User '{addedUser.Email}' To Group {group.Title}");
-        }
-
-        private static async Task CheckInheritedPermissionLevel(ClientContext ctx)
-        {
-            Web subSite = await GetSubsite(ctx, "Finance And Accounting");
-
-            Group myGroup = subSite.SiteGroups.GetByName("Test Group");
-            ctx.Load(myGroup, g => g.Title);
-
-            var res = subSite.RoleAssignments.GetByPrincipal(myGroup);
-            var roles = res.RoleDefinitionBindings;
-            ctx.Load(roles, rs => rs.Include(r => r.Name));
-            await ctx.ExecuteQueryAsync();
-
-            foreach(var role in roles)
-                if (role.Name.Equals("Test Level"))
-                {
-                    Console.WriteLine($"'{role.Name}' Has Been Inherited From The Root Site For The Security Group '{myGroup.Title}'");
-                    return;
-                }
-        }
-        #endregion
-
-
         #endregion
 
 

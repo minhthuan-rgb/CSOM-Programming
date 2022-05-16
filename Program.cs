@@ -1,6 +1,7 @@
 ﻿using Azure.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.SharePoint.Client;
+using Microsoft.SharePoint.Client.Search.Query;
 using Microsoft.SharePoint.Client.Taxonomy;
 using Microsoft.SharePoint.Client.UserProfiles;
 using Microsoft.SharePoint.Client.Utilities;
@@ -87,8 +88,6 @@ namespace CSOM_Programming
 
                     //await CreateFolders(ctx); // Create Folders For List "Document Test"
 
-                    //await SetDefaultContentType(ctx, "Document Test"); // Set "CSOM Test content type" As Default Content Type In List "Document Test"
-
                     //await AddFilesInsideFolder(ctx, 3, "FolderTest"); // Add 3 Files In "Folder 2" With Value "Folder test" In Field "about"
 
                     //await AddFilesInsideFolder(ctx, 2, "CitiesTest", true); // Add 2 Files In "Folder 2" With Value "Stockholm" In Field "cities"
@@ -101,7 +100,7 @@ namespace CSOM_Programming
 
                     //await CreateFolderStructureView(ctx); // Create Folder Structure View
 
-                    //await LoadUser(ctx, "59Tese"); // Load User From User Email Or Name
+                    ///await LoadUser(ctx, "59Tese"); // Load User From User Email Or Name
 
                     //await GetTaxonomyHiddenListItems(ctx); // Load TaxonomyHiddenList Items
 
@@ -126,7 +125,7 @@ namespace CSOM_Programming
 
                     //await CreateCustomSecurityGroup(ctx); // Create Custom Secure Group
 
-                    //Add 3 Users To Custom Security Group
+                    // Add 3 Users To Custom Security Group
                     //await AddUserToSecurityGroup(ctx, "thanh.pham.minh", "Test Group");
                     //await AddUserToSecurityGroup(ctx, "thao.pham.nguyen.phuong", "Test Group");
                     //await AddUserToSecurityGroup(ctx, "thien.pham.minh", "Test Group");
@@ -141,6 +140,10 @@ namespace CSOM_Programming
                     //await UpdateUserProperty(ctx, "59Tese@HenoldMK.onmicrosoft.com"); // Update User Property
                     #endregion
 
+
+                    #region KQL
+                    await KQLFilter(ctx);
+                    #endregion
                 }
 
                 Console.WriteLine($"Press Any Key To Stop!");
@@ -1278,6 +1281,22 @@ namespace CSOM_Programming
             await ctx.ExecuteQueryAsync();
 
             Console.WriteLine("Finished!");
+        }
+        #endregion
+
+
+        #region KQL
+        private static async Task KQLFilter(ClientContext ctx)
+        {
+            SearchExecutor searchExecutor = new SearchExecutor(ctx);
+            KeywordQuery keywordQuery = new KeywordQuery(ctx);
+            keywordQuery.QueryText = @"LastName=""Phạm""";
+            ClientResult<ResultTableCollection> results = searchExecutor.ExecuteQuery(keywordQuery);
+            await ctx.ExecuteQueryAsync();
+
+            if (results.Value[0].TotalRows == 0)
+                Console.WriteLine("No Record");
+            else Console.WriteLine("Test");
         }
         #endregion
     }

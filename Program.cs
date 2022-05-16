@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Azure.Identity;
+using Microsoft.Extensions.Configuration;
 using Microsoft.SharePoint.Client;
 using Microsoft.SharePoint.Client.Taxonomy;
 using Microsoft.SharePoint.Client.UserProfiles;
@@ -35,8 +36,8 @@ namespace CSOM_Programming
 
                     //await CreateTermSetAndTerms(ctx); // Create Term Set And 2 Terms
 
-                    //await CreateTextField(ctx, "about"); // Create site field "about" type text
-                    //await CreateTaxonomyField(ctx, "city"); // Create site field "city" type taxonomy
+                    //await CreateTextField(ctx, "hoabout"); // Create site field "about" type text
+                    //await CreateTaxonomyField(ctx, "hocity"); // Create site field "city" type taxonomy
 
                     //await CreateContentType(ctx, "CSOM Test content type"); // Create Content Type "CSOM Test content type"
 
@@ -46,7 +47,7 @@ namespace CSOM_Programming
 
                     //await SetDefaultContentType(ctx, "CSOM Test"); // Set "CSOM Test content type" As Default Content Type In List "CSOM test"
 
-                    //await BindTaxonomyFieldToTermSet(ctx, "city"); // Bind Taxonomy Field "city" To Term Set
+                    //await BindTaxonomyFieldToTermSet(ctx, "hocity"); // Bind Taxonomy Field "city" To Term Set
 
                     //await DisplayAllItemsListView(ctx); // Display All Items List View
 
@@ -60,7 +61,7 @@ namespace CSOM_Programming
 
                     //await AddItemsToList(ctx, 2, true, true); // Add 2 Items With Default Value Of "city" site field
 
-                    ////await GetListItems(ctx); // Get List Items Where Field "about" is not "about default"
+                    //await GetListItems(ctx); // Get List Items Where Field "about" is not "about default"
 
                     //await CreateListView(ctx); // Create List View by CSOM 
 
@@ -70,9 +71,9 @@ namespace CSOM_Programming
 
                     //await SetUserAdminToAuthorField(ctx); // Migrate all list items to set user admin to field "author"
 
-                    //await CreateTaxonomyFieldMulti(ctx, "cities"); // Create site field "cities" type taxonomy multi values
+                    //await CreateTaxonomyFieldMulti(ctx, "hocities"); // Create site field "cities" type taxonomy multi values
 
-                    //await BindTaxonomyFieldToTermSet(ctx, "cities"); // Bind Taxonomy Field "cities" To Term Set
+                    //await BindTaxonomyFieldToTermSet(ctx, "hocities"); // Bind Taxonomy Field "cities" To Term Set
 
                     //await AddCitiesFieldToContentType(ctx); // Add Field "cities" To Content Type "CSOM Test Content Type"
 
@@ -100,7 +101,7 @@ namespace CSOM_Programming
 
                     //await CreateFolderStructureView(ctx); // Create Folder Structure View
 
-                    //await LoadUser(ctx, "user.test"); // Load User From User Email Or Name
+                    //await LoadUser(ctx, "59Tese"); // Load User From User Email Or Name
 
                     //await GetTaxonomyHiddenListItems(ctx); // Load TaxonomyHiddenList Items
 
@@ -126,11 +127,18 @@ namespace CSOM_Programming
                     //await CreateCustomSecurityGroup(ctx); // Create Custom Secure Group
 
                     //Add 3 Users To Custom Security Group
-                    await AddUserToSecurityGroup(ctx, "thanh.pham.minh", "Test Group");
-                    await AddUserToSecurityGroup(ctx, "thao.pham.nguyen.phuong", "Test Group");
-                    await AddUserToSecurityGroup(ctx, "thien.pham.minh", "Test Group");
+                    //await AddUserToSecurityGroup(ctx, "thanh.pham.minh", "Test Group");
+                    //await AddUserToSecurityGroup(ctx, "thao.pham.nguyen.phuong", "Test Group");
+                    //await AddUserToSecurityGroup(ctx, "thien.pham.minh", "Test Group");
 
                     //await CheckInheritedPermissionLevel(ctx); // Check That Permission Level Of Group Has Been Inherited From The Root Site
+                    #endregion
+
+
+                    #region User Profile
+                    //await DisplaySomePropertiesForAllUsers(ctx); // Display Some Properties For All Users In The Tenant
+
+                    //await UpdateUserProperty(ctx, "59Tese@HenoldMK.onmicrosoft.com"); // Update User Property
                     #endregion
 
                 }
@@ -159,13 +167,12 @@ namespace CSOM_Programming
         #region List
         private static async Task CreateList(ClientContext ctx, string title, ListTemplateType type, Web web = null)
         {
-            List temp = web.Lists.GetByTitle(title);
-            if (temp != null)
-                throw new Exception($"List '{title}' Has Existed!");
-            var creationInfo = new ListCreationInformation();
-            creationInfo.Title = title;
-            creationInfo.TemplateType = (int)type;
-            List list = null;
+            var creationInfo = new ListCreationInformation
+            {
+                Title = title,
+                TemplateType = (int)type
+            };
+            List list;
             if (web == null)
                 list = ctx.Web.Lists.Add(creationInfo);
             else list = web.Lists.Add(creationInfo);
@@ -241,11 +248,11 @@ namespace CSOM_Programming
             var creationInfo = new ListItemCreationInformation();
             ListItem newItem = myList.AddItem(creationInfo);
             if (about != null)
-                newItem["about"] = $"Item {about}";
+                newItem["hoabout"] = $"Item {about}";
 
             if (!isCityDefault)
             {
-                var cityField = ctx.Web.Fields.GetByTitle("city");
+                var cityField = ctx.Web.Fields.GetByTitle("hocity");
 
                 var taxCityField = ctx.CastTo<TaxonomyField>(cityField);
                 taxCityField.SetFieldValueByTerm(newItem, GetTermByName(ctx, "Stockholm"), 1033);
@@ -253,7 +260,7 @@ namespace CSOM_Programming
 
             if (isMulti)
             {
-                var citiesField = ctx.Web.Fields.GetByTitle("cities");
+                var citiesField = ctx.Web.Fields.GetByTitle("hocities");
 
                 var taxCitiesField = ctx.CastTo<TaxonomyField>(citiesField);
                 taxCitiesField.SetFieldValueByTermCollection(newItem, GetAllTerms(ctx), 1033);
@@ -270,25 +277,22 @@ namespace CSOM_Programming
             List myList = ctx.Web.Lists.GetByTitle("CSOM Test");
             ctx.Load(myList, ml => ml.Title);
 
-            View temp = myList.Views.GetByTitle("CSOM Test View");
-
-            if (temp != null)
-                throw new Exception($"List View 'CSOM Test View' Has Existed!");
-
-            var creationInfo = new ViewCreationInformation();
-            creationInfo.Title = "CSOM Test View";
-            //creationInfo.SetAsDefaultView = true;
-            creationInfo.ViewTypeKind = ViewType.Html;
-            creationInfo.Query = @$"<OrderBy>
+            var creationInfo = new ViewCreationInformation
+            {
+                Title = "CSOM Test View",
+                //creationInfo.SetAsDefaultView = true;
+                ViewTypeKind = ViewType.Html,
+                Query = @$"<OrderBy>
                                     <FieldRef Name='Created' Ascending='False'/>
                                 </OrderBy>
                                 <Where>
                                     <Eq>
-                                        <FieldRef Name='city'/>
+                                        <FieldRef Name='hocity'/>
                                         <Value Type='{FieldType.TaxonomyFieldType.ToString()}'>Ho Chi Minh</Value>
                                     </Eq>
-                                </Where>";
-            string commaSeparateColumnNames = "ID, Title, about, city, Created";
+                                </Where>"
+            };
+            string commaSeparateColumnNames = "ID, Title, hoabout, hocity, Created";
             creationInfo.ViewFields = commaSeparateColumnNames.Split(", ");
 
             View listView = myList.Views.Add(creationInfo);
@@ -308,8 +312,8 @@ namespace CSOM_Programming
 
             allItemsView.ViewFields.RemoveAll();
             allItemsView.ViewFields.Add("ID");
-            allItemsView.ViewFields.Add("about");
-            allItemsView.ViewFields.Add("city");
+            allItemsView.ViewFields.Add("hoabout");
+            allItemsView.ViewFields.Add("hocity");
 
             allItemsView.DefaultView = true;
             allItemsView.Update();
@@ -326,7 +330,7 @@ namespace CSOM_Programming
 
             View allItemsView = await GetListView(ctx, myList, "All items");
 
-            allItemsView.ViewFields.Add("cities");
+            allItemsView.ViewFields.Add("hocities");
             allItemsView.Update();
 
             await ctx.ExecuteQueryAsync();
@@ -349,7 +353,7 @@ namespace CSOM_Programming
         {
             List myList = ctx.Web.Lists.GetByTitle("CSOM Test");
 
-            await CreateField(ctx, "authorr", FieldType.User, myList.Fields);
+            await CreateField(ctx, "hoauthor", FieldType.User, myList.Fields);
         }
 
         private static async Task SetUserAdminToAuthorField(ClientContext ctx)
@@ -365,25 +369,25 @@ namespace CSOM_Programming
                                     </OrderBy>
                                 </Query>
                                 <ViewFields>
-                                    <FieldRef Name='authorr'/>
+                                    <FieldRef Name='hoauthor'/>
                                 </ViewFields>
                             </View>"
             });
-            ctx.Load(items, its => its.Include(it => it["authorr"]));
+            ctx.Load(items, its => its.Include(it => it["hoauthor"]));
 
             User user = ctx.Web.EnsureUser(await LoadCurrentUserEmail(ctx));
             ctx.Load(user, u => u.Id);
 
             await ctx.ExecuteQueryAsync();
 
-            FieldUserValue userValue = new FieldUserValue()
+            FieldUserValue userValue = new()
             {
                 LookupId = user.Id,
             };
 
             foreach (var item in items)
             {
-                item["authorr"] = userValue;
+                item["hoauthor"] = userValue;
                 item.Update();
             }
 
@@ -395,7 +399,7 @@ namespace CSOM_Programming
         private static async Task<string> LoadCurrentUserEmail(ClientContext ctx)
         {
             //User currentUser = ctx.Web.CurrentUser;
-            PeopleManager peopleManager = new PeopleManager(ctx);
+            PeopleManager peopleManager = new(ctx);
             PersonProperties properties = peopleManager.GetMyProperties();
             ctx.Load(properties, p => p.DisplayName,
                                  p => p.Email);
@@ -429,8 +433,6 @@ namespace CSOM_Programming
 
         private static async Task AddFilesInsideFolder(ClientContext ctx, int amount, string title, bool isCities = false)
         {
-            List myList = ctx.Web.Lists.GetByTitle("Document Test");
-
             Folder folder = ctx.Web.GetFolderByServerRelativeUrl(ctx.Web.ServerRelativeUrl + "/Document%20Test/Folder%201/Folder%202");
 
             for (int i = 0; i < amount; i++)
@@ -467,12 +469,12 @@ namespace CSOM_Programming
 
             if (isCities)
             {
-                var citiesField = ctx.Web.Fields.GetByTitle("cities");
+                var citiesField = ctx.Web.Fields.GetByTitle("hocities");
                 var taxCitiesField = ctx.CastTo<TaxonomyField>(citiesField);
 
                 taxCitiesField.SetFieldValueByTerm(newItem, GetTermByName(ctx, "Stockholm"), 1033);
             }
-            else newItem["about"] = "Folder Test";
+            else newItem["hoabout"] = "Folder Test";
 
             newItem.Update();
 
@@ -515,9 +517,9 @@ namespace CSOM_Programming
             ctx.Load(myList, ml => ml.Title);
             View allDocumentsView = await GetListView(ctx, myList, "All Documents");
 
-            allDocumentsView.ViewFields.Add("about");
-            allDocumentsView.ViewFields.Add("city");
-            allDocumentsView.ViewFields.Add("cities");
+            allDocumentsView.ViewFields.Add("hoabout");
+            allDocumentsView.ViewFields.Add("hocity");
+            allDocumentsView.ViewFields.Add("hocities");
             allDocumentsView.DefaultView = true;
             allDocumentsView.Update();
 
@@ -540,15 +542,17 @@ namespace CSOM_Programming
             if (temp != null)
                 throw new Exception($"List View '{temp.Title}' Has Existed!");
 
-            var creationInfo = new ViewCreationInformation();
-            creationInfo.Title = "Folders";
-            creationInfo.ViewTypeKind = ViewType.Html;
-            creationInfo.Query = @$"<Where>
+            var creationInfo = new ViewCreationInformation
+            {
+                Title = "Folders",
+                ViewTypeKind = ViewType.Html,
+                Query = @$"<Where>
                                     <Eq>
                                         <FieldRef Name='FSObjType'/>
                                         <Value Type='{FieldType.Integer.ToString()}'>1</Value>
                                     </Eq>
-                                </Where>";
+                                </Where>"
+            };
             string commaSeparateColumnNames = "Type, Name, Modified, Modified By";
             creationInfo.ViewFields = commaSeparateColumnNames.Split(", ");
 
@@ -572,15 +576,15 @@ namespace CSOM_Programming
             TermStore termStore = taxonomySession.GetDefaultSiteCollectionTermStore();
 
             // Create Group Test
-            TermGroup termGroup = termStore.CreateGroup("Test", Guid.NewGuid());
+            //TermGroup termGroup = termStore.CreateGroup("Test", Guid.NewGuid());
+            TermGroup termGroup = termStore.Groups.GetByName("Test");
 
             // Create Term Set
             TermSet termSet = termGroup.CreateTermSet("city-PhamMinhThuan", Guid.NewGuid(), 1033);
 
             // Create 2 Terms
-            Term hcm = termSet.CreateTerm("Ho Chi Minh", 1033, Guid.NewGuid());
-
-            Term stockholm = termSet.CreateTerm("Stockholm", 1033, Guid.NewGuid());
+            termSet.CreateTerm("Ho Chi Minh", 1033, Guid.NewGuid());
+            termSet.CreateTerm("Stockholm", 1033, Guid.NewGuid());
 
             await ctx.ExecuteQueryAsync();
 
@@ -680,7 +684,7 @@ namespace CSOM_Programming
 
         private static async Task SetDefaultValueForAboutField(ClientContext ctx)
         {
-            Field field = ctx.Web.Fields.GetByTitle("about");
+            Field field = ctx.Web.Fields.GetByTitle("hoabout");
             field.DefaultValue = "about default";
             field.UpdateAndPushChanges(true);
 
@@ -694,14 +698,14 @@ namespace CSOM_Programming
 
         private static async Task SetDefaultValueForCityField(ClientContext ctx)
         {
-            Field field = ctx.Web.Fields.GetByTitle("city");
+            Field field = ctx.Web.Fields.GetByTitle("hocity");
             TaxonomyField taxCityField = ctx.CastTo<TaxonomyField>(field);
             var term = GetTermByName(ctx, "Ho Chi Minh");
             ctx.Load(term, t => t.Id,
                            t => t.Name);
             await ctx.ExecuteQueryAsync();
 
-            TaxonomyFieldValue taxonomyFieldValue = new TaxonomyFieldValue()
+            TaxonomyFieldValue taxonomyFieldValue = new()
             {
                 WssId = -1,
                 Label = term.Name,
@@ -733,10 +737,12 @@ namespace CSOM_Programming
             if (temp != null)
                 throw new Exception($"Content Type Name '{name}' Has Existed!");
 
-            var creationInfo = new ContentTypeCreationInformation();
-            creationInfo.Name = name;
-            creationInfo.Group = "59Tese Content Types";
-            creationInfo.ParentContentType = contentTypes.First(c => c.Name.Equals("Item"));
+            var creationInfo = new ContentTypeCreationInformation
+            {
+                Name = name,
+                Group = "59Tese Content Types",
+                ParentContentType = contentTypes.First(c => c.Name.Equals("Item"))
+            };
 
             ContentType myContentType = contentTypes.Add(creationInfo);
 
@@ -763,8 +769,10 @@ namespace CSOM_Programming
 
             foreach (Field field in groupFields)
             {
-                var creationInfo = new FieldLinkCreationInformation();
-                creationInfo.Field = field;
+                var creationInfo = new FieldLinkCreationInformation
+                {
+                    Field = field
+                };
                 contentType.FieldLinks.Add(creationInfo);
             }
             contentType.Update(true);
@@ -792,10 +800,12 @@ namespace CSOM_Programming
             await ctx.ExecuteQueryAsync();
 
             ContentType contentType = contentTypes.First(c => c.Name.Equals("CSOM Test content type"));
-            Field myField = fields.First(f => f.StaticName.Equals("cities"));
+            Field myField = fields.First(f => f.StaticName.Equals("hocities"));
 
-            var creationInfo = new FieldLinkCreationInformation();
-            creationInfo.Field = myField;
+            var creationInfo = new FieldLinkCreationInformation
+            {
+                Field = myField
+            };
             contentType.FieldLinks.Add(creationInfo);
 
             contentType.Update(true);
@@ -818,7 +828,7 @@ namespace CSOM_Programming
                                 <Query>
                                     <Where>
                                         <Neq>
-                                            <FieldRef Name='about'/>
+                                            <FieldRef Name='hoabout'/>
                                             <Value Type='{FieldType.Text.ToString()}'>about default</Value>
                                         </Neq>
                                     </Where>
@@ -826,15 +836,15 @@ namespace CSOM_Programming
                             </View>"
             });
             ctx.Load(items, its => its.Include(it => it.Id,
-                                               it => it["about"],
-                                               it => it["city"]
+                                               it => it["hoabout"],
+                                               it => it["hocity"]
                                                ));
             await ctx.ExecuteQueryAsync();
 
             foreach (var item in items)
             {
-                TaxonomyFieldValue taxCityFieldValue = item["city"] as TaxonomyFieldValue;
-                Console.WriteLine($"ID: {item.Id} \tAbout: {item["about"]} \tCity: {taxCityFieldValue.Label}");
+                TaxonomyFieldValue taxCityFieldValue = item["hocity"] as TaxonomyFieldValue;
+                Console.WriteLine($"ID: {item.Id} \tAbout: {item["hoabout"]} \tCity: {taxCityFieldValue.Label}");
             }
 
             Console.WriteLine("Finished!");
@@ -850,7 +860,7 @@ namespace CSOM_Programming
                                 <Query>
                                     <Where>
                                         <Eq>
-                                            <FieldRef Name='about'/>
+                                            <FieldRef Name='hoabout'/>
                                             <Value Type='{FieldType.Text.ToString()}'>about default</Value>
                                         </Eq>
                                     </Where>
@@ -858,14 +868,14 @@ namespace CSOM_Programming
                                 <RowLimit>2</RowLimit>
                             </View>"
             });
-            ctx.Load(items, its => its.Include(it => it["about"]));
+            ctx.Load(items, its => its.Include(it => it["hoabout"]));
             await ctx.ExecuteQueryAsync();
 
             if (items.Count > 0)
             {
                 foreach (var item in items)
                 {
-                    item["about"] = "Update script";
+                    item["hoabout"] = "Update script";
                     item.Update();
                 }
                 await ctx.ExecuteQueryAsync();
@@ -888,7 +898,7 @@ namespace CSOM_Programming
                                 <Query>
                                     <Where>
                                         <Includes>
-                                            <FieldRef Name='cities'/>
+                                            <FieldRef Name='hocities'/>
                                             <Value Type='{FieldType.TaxonomyFieldTypeMulti.ToString()}'>Stockholm</Value>
                                         </Includes>
                                     </Where>
@@ -897,15 +907,15 @@ namespace CSOM_Programming
                 FolderServerRelativeUrl = folder.ServerRelativeUrl
             });
             ctx.Load(items, its => its.Include(it => it.Id,
-                                               it => it["about"],
-                                               it => it["cities"]
+                                               it => it["hoabout"],
+                                               it => it["hocities"]
                                                ));
             await ctx.ExecuteQueryAsync();
 
             foreach (var item in items)
             {
-                TaxonomyFieldValueCollection taxCitiesFieldValues = item["cities"] as TaxonomyFieldValueCollection;
-                string res = $"ID: {item.Id} \tAbout: {item["about"]} \tCities: ";
+                TaxonomyFieldValueCollection taxCitiesFieldValues = item["hocities"] as TaxonomyFieldValueCollection;
+                string res = $"ID: {item.Id} \tAbout: {item["hoabout"]} \tCities: ";
                 foreach (var value in taxCitiesFieldValues)
                     res += "| " + value.Label + " |";
                 Console.WriteLine(res);
@@ -999,13 +1009,15 @@ namespace CSOM_Programming
         #region Exercise 3
         private static async Task CreateSubSite(ClientContext ctx)
         {
-            var creationInfo = new WebCreationInformation();
-            creationInfo.Url = "FinanceAndAccounting";
-            creationInfo.Title = "Finance And Accounting";
-            creationInfo.Description = "Finance And Accounting subsite for Permission exercise";
-            creationInfo.UseSamePermissionsAsParentSite = true;
-            creationInfo.WebTemplate = "STS#3";
-            creationInfo.Language = 1033;
+            var creationInfo = new WebCreationInformation
+            {
+                Url = "FinanceAndAccounting",
+                Title = "Finance And Accounting",
+                Description = "Finance And Accounting subsite for Permission exercise",
+                UseSamePermissionsAsParentSite = true,
+                WebTemplate = "STS#3",
+                Language = 1033
+            };
 
             Web web = ctx.Web.Webs.Add(creationInfo);
             ctx.Load(web, w => w.Title,
@@ -1067,8 +1079,10 @@ namespace CSOM_Programming
 
                 try
                 {
-                    var listRoleDefinitionBinding = new RoleDefinitionBindingCollection(ctx);
-                    listRoleDefinitionBinding.Add(ctx.Web.RoleDefinitions.GetByType(roleType));
+                    var listRoleDefinitionBinding = new RoleDefinitionBindingCollection(ctx)
+                    {
+                        ctx.Web.RoleDefinitions.GetByType(roleType)
+                    };
 
                     var roleAssignment = myList.RoleAssignments.GetByPrincipal(user);
                     ctx.Load(roleAssignment, r => r.RoleDefinitionBindings);
@@ -1088,8 +1102,10 @@ namespace CSOM_Programming
                 }
                 catch (ServerException)
                 {
-                    var listRoleDefinitionBinding = new RoleDefinitionBindingCollection(ctx);
-                    listRoleDefinitionBinding.Add(ctx.Web.RoleDefinitions.GetByType(roleType));
+                    var listRoleDefinitionBinding = new RoleDefinitionBindingCollection(ctx)
+                    {
+                        ctx.Web.RoleDefinitions.GetByType(roleType)
+                    };
 
                     myList.RoleAssignments.Add(user, listRoleDefinitionBinding);
 
@@ -1127,14 +1143,16 @@ namespace CSOM_Programming
         #region Exercise 4
         private static async Task CreateCustomPermissionLevel(ClientContext ctx)
         {
-            BasePermissions basePermissions = new BasePermissions();
+            BasePermissions basePermissions = new();
             basePermissions.Set(PermissionKind.ManageLists);
             basePermissions.Set(PermissionKind.CreateAlerts);
-            
-            var creationInfo = new RoleDefinitionCreationInformation();
-            creationInfo.Name = "Test Level";
-            creationInfo.Description = "Custom Permission Level 'Test', granted 'manage lists' and 'create alerts' permissions";
-            creationInfo.BasePermissions = basePermissions;
+
+            var creationInfo = new RoleDefinitionCreationInformation
+            {
+                Name = "Test Level",
+                Description = "Custom Permission Level 'Test', granted 'manage lists' and 'create alerts' permissions",
+                BasePermissions = basePermissions
+            };
 
             var roleDefinition = ctx.Web.RoleDefinitions.Add(creationInfo);
             ctx.Load(roleDefinition, r => r.Name,
@@ -1146,14 +1164,18 @@ namespace CSOM_Programming
 
         private static async Task CreateCustomSecurityGroup(ClientContext ctx)
         {
-            var creationInfo = new GroupCreationInformation();
-            creationInfo.Title = "Test Group";
+            var creationInfo = new GroupCreationInformation
+            {
+                Title = "Test Group"
+            };
             Group group = ctx.Web.SiteGroups.Add(creationInfo);
             
             await ctx.ExecuteQueryAsync();
 
-            var siteRoleDefinitionBinding = new RoleDefinitionBindingCollection(ctx);
-            siteRoleDefinitionBinding.Add(ctx.Web.RoleDefinitions.GetByName("Test Level"));
+            var siteRoleDefinitionBinding = new RoleDefinitionBindingCollection(ctx)
+            {
+                ctx.Web.RoleDefinitions.GetByName("Test Level")
+            };
             ctx.Web.RoleAssignments.Add(group, siteRoleDefinitionBinding);
 
             await ctx.ExecuteQueryAsync();
@@ -1207,6 +1229,56 @@ namespace CSOM_Programming
         #endregion
 
 
+        #endregion
+
+
+        #region User Profile
+        private static async Task DisplaySomePropertiesForAllUsers(ClientContext ctx)
+        {
+            var builder = new ConfigurationBuilder().AddJsonFile($"appsettings.json", true, true);
+            IConfiguration config = builder.Build();
+            var info = config.GetSection("AzureAdInfo").Get<AzureAdInfo>();
+            
+
+            Microsoft.Graph.GraphServiceClient graphServiceClient = new(new ClientSecretCredential(info.TenantId, info.ClientId, info.ClientSecret));
+            var users = graphServiceClient.Users.Request().Select(u => u.Mail).GetAsync().Result;
+
+            PeopleManager peopleManager = new(ctx);
+
+            foreach (var u in users)
+            {
+                var user = ctx.Web.EnsureUser(u.Mail);
+                ctx.Load(user, u => u.LoginName);
+                await ctx.ExecuteQueryAsync();
+
+                var props = peopleManager.GetPropertiesFor(user.LoginName);
+                ctx.Load(props, p => p.UserProfileProperties);
+                await ctx.ExecuteQueryAsync();
+
+                var userProfileProps = props.UserProfileProperties;
+                Console.WriteLine($" Account Name: {userProfileProps["AccountName"]}\n" +
+                                    $" First Name: {userProfileProps["FirstName"]}\n" +
+                                    $" Last Name: {userProfileProps["LastName"]}\n" +
+                                    $" Work Phone: {userProfileProps["WorkPhone"]}");
+            }
+        }
+
+        private static async Task UpdateUserProperty(ClientContext ctx, string logonName)
+        {
+            User user = ctx.Web.EnsureUser(logonName);
+            ctx.Load(user, u => u.LoginName);
+            await ctx.ExecuteQueryAsync();
+
+            PeopleManager peopleManager = new(ctx);
+            var props = peopleManager.GetPropertiesFor(user.LoginName);
+            ctx.Load(props, p => p.UserProfileProperties);
+            await ctx.ExecuteQueryAsync();
+
+            peopleManager.SetSingleValueProfileProperty(user.LoginName, "Henold-MiddleName", "Minh");
+            await ctx.ExecuteQueryAsync();
+
+            Console.WriteLine("Finished!");
+        }
         #endregion
     }
 }

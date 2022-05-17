@@ -1288,15 +1288,35 @@ namespace CSOM_Programming
         #region KQL
         private static async Task KQLFilter(ClientContext ctx)
         {
-            SearchExecutor searchExecutor = new SearchExecutor(ctx);
-            KeywordQuery keywordQuery = new KeywordQuery(ctx);
-            keywordQuery.QueryText = @"LastName=""Phạm""";
+            SearchExecutor searchExecutor = new(ctx);
+            KeywordQuery keywordQuery = new(ctx)
+            {
+                QueryText = @"LastName=Phạm",
+                EnableSorting = true,
+                RowsPerPage = 100,
+                RowLimit = 100,
+                SourceId = new Guid("b09a7990-05ea-4af9-81ef-edfab16c4e31")
+            };
+            keywordQuery.SelectProperties.Add("LastName");
+            keywordQuery.SelectProperties.Add("FirstName");
+            keywordQuery.SelectProperties.Add("Henold-MiddleName");
+            keywordQuery.SelectProperties.Add("WorkPhone");
             ClientResult<ResultTableCollection> results = searchExecutor.ExecuteQuery(keywordQuery);
             await ctx.ExecuteQueryAsync();
 
             if (results.Value[0].TotalRows == 0)
-                Console.WriteLine("No Record");
-            else Console.WriteLine("Test");
+                Console.WriteLine("No Record Found!");
+            else
+            {
+                foreach(var resultRow in results.Value[0].ResultRows)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine($" First Name: {resultRow["FirstName"]}\n " +
+                        $"Middle Name: {resultRow["Henold-MiddleName"]}\n " +
+                        $"Last Name: {resultRow["LastName"]}\n " +
+                        $"Work Phone: {resultRow["WorkPhone"]}");
+                }
+            }
         }
         #endregion
     }

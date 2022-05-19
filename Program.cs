@@ -37,7 +37,7 @@ namespace CSOM_Programming
 
                     //await CreateTermSetAndTerms(ctx); // Create Term Set And 2 Terms
 
-                    //await CreateTextField(ctx, "hoabout"); // Create site field "about" type text
+                    await CreateTextField(ctx, "hoabout"); // Create site field "about" type text
                     //await CreateTaxonomyField(ctx, "hocity"); // Create site field "city" type taxonomy
 
                     //await CreateContentType(ctx, "CSOM Test content type"); // Create Content Type "CSOM Test content type"
@@ -137,12 +137,12 @@ namespace CSOM_Programming
                     #region User Profile
                     //await DisplaySomePropertiesForAllUsers(ctx); // Display Some Properties For All Users In The Tenant
 
-                    //await UpdateUserProperty(ctx, "59Tese@HenoldMK.onmicrosoft.com"); // Update User Property
+                    //await UpdateUserProperty(ctx, "thanh.pham.minh"); // Update User Property
                     #endregion
 
 
                     #region KQL
-                    await KQLFilter(ctx);
+                    //await KQLFilter(ctx);
                     #endregion
                 }
 
@@ -291,7 +291,7 @@ namespace CSOM_Programming
                                 <Where>
                                     <Eq>
                                         <FieldRef Name='hocity'/>
-                                        <Value Type='{FieldType.TaxonomyFieldType.ToString()}'>Ho Chi Minh</Value>
+                                        <Value Type='{FieldType.TaxonomyFieldType}'>Ho Chi Minh</Value>
                                     </Eq>
                                 </Where>"
             };
@@ -552,7 +552,7 @@ namespace CSOM_Programming
                 Query = @$"<Where>
                                     <Eq>
                                         <FieldRef Name='FSObjType'/>
-                                        <Value Type='{FieldType.Integer.ToString()}'>1</Value>
+                                        <Value Type='{FieldType.Integer}'>1</Value>
                                     </Eq>
                                 </Where>"
             };
@@ -638,7 +638,7 @@ namespace CSOM_Programming
             string isUserString = fieldType == FieldType.User ? "UserSelectionMode='PeopleOnly' " : "";
 
             string schemaField = $"<Field ID='{Guid.NewGuid()}' " +
-                                $"Type='{fieldType.ToString()}' " +
+                                $"Type='{fieldType}' " +
                                 isMultiStr +
                                 $"Name='{name}' " +
                                 $"StaticName='{name}' " +
@@ -832,7 +832,7 @@ namespace CSOM_Programming
                                     <Where>
                                         <Neq>
                                             <FieldRef Name='hoabout'/>
-                                            <Value Type='{FieldType.Text.ToString()}'>about default</Value>
+                                            <Value Type='{FieldType.Text}'>about default</Value>
                                         </Neq>
                                     </Where>
                                 </Query>
@@ -864,7 +864,7 @@ namespace CSOM_Programming
                                     <Where>
                                         <Eq>
                                             <FieldRef Name='hoabout'/>
-                                            <Value Type='{FieldType.Text.ToString()}'>about default</Value>
+                                            <Value Type='{FieldType.Text}'>about default</Value>
                                         </Eq>
                                     </Where>
                                 </Query>
@@ -902,7 +902,7 @@ namespace CSOM_Programming
                                     <Where>
                                         <Includes>
                                             <FieldRef Name='hocities'/>
-                                            <Value Type='{FieldType.TaxonomyFieldTypeMulti.ToString()}'>Stockholm</Value>
+                                            <Value Type='{FieldType.TaxonomyFieldTypeMulti}'>Stockholm</Value>
                                         </Includes>
                                     </Where>
                                 </Query>
@@ -1241,7 +1241,6 @@ namespace CSOM_Programming
             var builder = new ConfigurationBuilder().AddJsonFile($"appsettings.json", true, true);
             IConfiguration config = builder.Build();
             var info = config.GetSection("AzureAdInfo").Get<AzureAdInfo>();
-            
 
             Microsoft.Graph.GraphServiceClient graphServiceClient = new(new ClientSecretCredential(info.TenantId, info.ClientId, info.ClientSecret));
             var users = graphServiceClient.Users.Request().Select(u => u.Mail).GetAsync().Result;
@@ -1295,11 +1294,12 @@ namespace CSOM_Programming
                 EnableSorting = true,
                 RowsPerPage = 100,
                 RowLimit = 100,
-                SourceId = new Guid("b09a7990-05ea-4af9-81ef-edfab16c4e31")
+                SourceId = new Guid("b09a7990-05ea-4af9-81ef-edfab16c4e31"),
+                TrimDuplicates = false
             };
             keywordQuery.SelectProperties.Add("LastName");
             keywordQuery.SelectProperties.Add("FirstName");
-            keywordQuery.SelectProperties.Add("Henold-MiddleName");
+            keywordQuery.SelectProperties.Add("RefinableString00");
             keywordQuery.SelectProperties.Add("WorkPhone");
             ClientResult<ResultTableCollection> results = searchExecutor.ExecuteQuery(keywordQuery);
             await ctx.ExecuteQueryAsync();
@@ -1312,7 +1312,7 @@ namespace CSOM_Programming
                 {
                     Console.WriteLine();
                     Console.WriteLine($" First Name: {resultRow["FirstName"]}\n " +
-                        $"Middle Name: {resultRow["Henold-MiddleName"]}\n " +
+                        $"Middle Name: {resultRow["RefinableString00"]}\n " +
                         $"Last Name: {resultRow["LastName"]}\n " +
                         $"Work Phone: {resultRow["WorkPhone"]}");
                 }

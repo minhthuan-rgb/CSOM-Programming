@@ -103,9 +103,7 @@ namespace CSOM_Programming
                         (uint)CalculateThreadSleep(accessToken).TotalMilliseconds,
                         true
                     );
-
                     return accessToken;
-
                 }
                 finally
                 {
